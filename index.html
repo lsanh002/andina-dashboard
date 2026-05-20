@@ -343,7 +343,8 @@ tbody td{padding:8px 10px;color:#2a3840}
 .sem-cell.c-green{background:#2E7D32;color:#fff}
 .sem-cell.c-amber{background:#FFAA00;color:#25313A}
 .sem-cell.c-red{background:#C13832;color:#fff}
-.sem-cell.c-future{background:rgba(180,200,210,.2);color:#bbb;font-size:.6rem;cursor:default}
+.sem-cell.c-future{background:rgba(180,200,210,.12);color:#bbb;font-size:.75rem;cursor:default;letter-spacing:0}
+.sem-cell.c-empty{background:#f5f9fa;color:#ddd;font-size:.75rem}
 .sem-cell.c-future:hover{transform:none;box-shadow:none}
 .sem-area-label{
   text-align:left;padding:6px 10px;font-weight:600;
@@ -685,7 +686,7 @@ tbody td{padding:8px 10px;color:#2a3840}
     <div class="modal-grid">
       <div class="form-group">
         <label>Responsable</label>
-        <select id="m-responsable">
+        <select id="m-responsable" onchange="preloadModalValue()">
           <option>FRANCISCO CASAS-CORDERO</option>
           <option>SEBASTIAN YOUNG</option>
           <option>JAVIERA ROMERO</option>
@@ -695,7 +696,7 @@ tbody td{padding:8px 10px;color:#2a3840}
       </div>
       <div class="form-group">
         <label>Planta</label>
-        <select id="m-planta">
+        <select id="m-planta" onchange="preloadModalValue()">
           <option>PRIMARIO</option>
           <option>CHANCADO</option>
           <option>MOLIENDA SAG</option>
@@ -705,7 +706,7 @@ tbody td{padding:8px 10px;color:#2a3840}
       </div>
       <div class="form-group">
         <label>Indicador</label>
-        <select id="m-indicador" onchange="updateModalUnit()">
+        <select id="m-indicador" onchange="updateModalUnit();preloadModalValue()">
           <option value="tarjetas_verdes">Nº Tarjetas Verdes Abiertas</option>
           <option value="reportes_peligro">Nº Reportes de Peligro Abiertas</option>
           <option value="acc_correctivas">Acciones correctivas de Inv. Abiertas</option>
@@ -732,7 +733,7 @@ tbody td{padding:8px 10px;color:#2a3840}
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="m-valor" min="0" placeholder="0" step="1">
+        <input type="number" id="m-valor" placeholder="— dejar vacío para mostrar -" step="1">
       </div>
     </div>
 
@@ -746,6 +747,7 @@ tbody td{padding:8px 10px;color:#2a3840}
 
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" style="background:var(--red);margin-right:auto" onclick="deleteEntry()">🗑 Borrar registro</button>
       <button class="btn-save" onclick="saveEntry()">💾 Guardar Registro</button>
     </div>
   </div>
@@ -876,21 +878,16 @@ function seedData(){
 
   const frecuencias = {PRIMARIO:'semanal',CHANCADO:'semanal','MOLIENDA SAG':'semanal','MOLIENDA CONVENCIONAL FLOTACION':'semanal',FILTROS:'semanal'};
 
-  // Solo generar filas para S11→S20 (10 semanas con datos reales)
   for(let sem=SEM_INICIO; sem<=SEM_FIN; sem++){
-    const idx = sem - SEM_INICIO;   // 0 a 9
+    const idx = sem - SEM_INICIO;
     PLANTAS.forEach(planta=>{
       INDICADORES.forEach(ind=>{
         const val = (base[ind.key][planta][idx]) ?? 0;
         rows.push({
-          semana:sem,
-          responsable:RESPONSABLES[planta],
-          planta,
-          indicador:ind.key,
-          indicadorLabel:ind.label,
-          unidad:ind.unit,
-          frecuencia:frecuencias[planta],
-          valor:val
+          semana:sem, responsable:RESPONSABLES[planta], planta,
+          indicador:ind.key, indicadorLabel:ind.label,
+          unidad:ind.unit, frecuencia:frecuencias[planta],
+          valor:val, _seed:true
         });
       });
     });
@@ -1150,8 +1147,10 @@ function buildSemaforoTables(){
     html += `<th style="min-width:42px;color:var(--navy);font-size:.65rem;text-align:center">∑</th>`;
     html += `</tr></thead><tbody>`;
 
-    const colTotals = Array(52 - SEM_DATOS_INICIO + 1).fill(0);  // index 0=S11..41=S52
-    let grandTotal  = 0;
+    const colTotals  = Array(52 - SEM_DATOS_INICIO + 1).fill(0);
+    const colHasReal = Array(52 - SEM_DATOS_INICIO + 1).fill(false);
+    let grandTotal   = 0;
+    let grandHasReal = false;
 
     // Solo filas de plantas filtradas
     plantasFiltradas.forEach(p => {
@@ -1164,21 +1163,42 @@ function buildSemaforoTables(){
       </td>`;
 
       let rowTotal = 0;
+      let hasRealData = false;
       for(let s=SEM_DATOS_INICIO;s<=52;s++){
-        const future = s > SEM_DATOS_FIN;
-        const row  = allData.find(d=>d.planta===p&&d.indicador===ind.key&&d.semana===s);
-        const val  = future ? null : (row ? row.valor : 0);
-        const cls  = semColor(val, future, ind.umbralAmbar, ind.umbralRojo);
-        const disp = future ? '·' : val;
-        const dtip = future ? '' : `data-tip="${ind.label}§§${p}§§S${s}§§${val}§§${(row&&row.comentario)?row.comentario.replace(/"/g,'&quot;').replace(/§/g,'&sect;'):''}"`;
-        if(!future){ colTotals[s-SEM_DATOS_INICIO] += val||0; rowTotal += val||0; grandTotal += val||0; }
+        const future    = s > SEM_DATOS_FIN;
+        const manualRow = allData.find(d=>d.planta===p&&d.indicador===ind.key&&d.semana===s&&d._manual);
+        const seedRow   = allData.find(d=>d.planta===p&&d.indicador===ind.key&&d.semana===s&&d._seed);
+        const activeRow = manualRow || (!future ? seedRow : null);
+
+        let cls, disp, cellVal = 0, countInTotal = false;
+
+        if(manualRow && manualRow.valor === null){
+          // Usuario guardó vacío → guión gris
+          cls = 'c-future'; disp = '-';
+        } else if(future && !manualRow){
+          // Semana futura sin dato → guión gris
+          cls = 'c-future'; disp = '-';
+        } else if(!activeRow){
+          // Semana pasada sin dato → vacía
+          cls = 'c-empty'; disp = '';
+        } else {
+          // Dato real (manual o seed con valor > 0)
+          cellVal = activeRow.valor || 0;
+          cls = semColor(cellVal, false, ind.umbralAmbar, ind.umbralRojo);
+          disp = cellVal;
+          countInTotal = true;
+        }
+
+        const dtip = (activeRow && disp !== '-' && disp !== '') ? `data-tip="${ind.label}§§${p}§§S${s}§§${disp}§§${activeRow.comentario||''}"` : '';
+        if(countInTotal){ colTotals[s-SEM_DATOS_INICIO] += cellVal; rowTotal += cellVal; grandTotal += cellVal; hasRealData = true; grandHasReal = true; colHasReal[s-SEM_DATOS_INICIO] = true; }
         html += `<td class="sem-cell ${cls}" ${dtip}
           onmouseenter="showTip(event,this)" onmouseleave="hideTip()">${disp}</td>`;
       }
 
-      const rowColor = rowTotal > 0 ? 'var(--red)' : 'var(--green)';
+      const rowColor = !hasRealData ? 'var(--muted)' : rowTotal > 0 ? 'var(--red)' : 'var(--green)';
+      const rowDisp  = !hasRealData ? '-' : rowTotal;
       html += `<td style="text-align:center;font-weight:800;font-size:.74rem;
-                color:${rowColor};border-left:2px solid var(--line)">${rowTotal}</td>`;
+                color:${rowColor};border-left:2px solid var(--line)">${rowDisp}</td>`;
       html += `</tr>`;
     });
 
@@ -1189,12 +1209,14 @@ function buildSemaforoTables(){
       for(let s=SEM_DATOS_INICIO;s<=52;s++){
         const future = s > SEM_DATOS_FIN;
         const t   = colTotals[s-SEM_DATOS_INICIO];
-        const cls = future ? 'c-future' : semColor(t, false, ind.umbralAmbar * plantasFiltradas.length, ind.umbralRojo * plantasFiltradas.length);
-        html += `<td class="sem-cell ${cls}" style="font-size:.62rem">${future?'·':t}</td>`;
+        const noData = !colHasReal[s-SEM_DATOS_INICIO];
+        const cls = (future || noData) ? 'c-future' : semColor(t, false, ind.umbralAmbar * plantasFiltradas.length, ind.umbralRojo * plantasFiltradas.length);
+        html += `<td class="sem-cell ${cls}" style="font-size:.62rem">${(future||noData)?'-':t}</td>`;
       }
-      const gcColor = grandTotal > 0 ? 'var(--red)' : 'var(--green)';
+      const gcColor = !grandHasReal ? 'var(--muted)' : grandTotal > 0 ? 'var(--red)' : 'var(--green)';
+      const gcDisp  = !grandHasReal ? '-' : grandTotal;
       html += `<td style="text-align:center;font-weight:800;font-size:.74rem;
-                color:${gcColor};border-left:2px solid var(--line)">${grandTotal}</td>`;
+                color:${gcColor};border-left:2px solid var(--line)">${gcDisp}</td>`;
       html += `</tr>`;
     }
 
@@ -1240,9 +1262,12 @@ function moveTip(e){
 
 function getAvisosTPVal(planta, semana){
   if(semana < SEM_DATOS_INICIO) return null;
-  const row = allData.find(d=>d.planta===planta&&d.indicador==='avisos_tp'&&d.semana===semana);
-  if(row !== undefined) return row.valor;
-  return semana <= SEM_DATOS_FIN ? 0 : null;
+  const manualRow = allData.find(d=>d.planta===planta&&d.indicador==='avisos_tp'&&d.semana===semana&&d._manual);
+  const seedRow   = allData.find(d=>d.planta===planta&&d.indicador==='avisos_tp'&&d.semana===semana&&d._seed);
+  const row       = manualRow || seedRow;
+  if(!row) return semana <= SEM_DATOS_FIN ? 0 : null;
+  if(row.valor === null) return null;
+  return row.valor;
 }
 
 function avisosLineOpts(){
@@ -1386,14 +1411,15 @@ function updateChartAvisos(){
 // GRÁFICOS DE LÍNEA GENÉRICOS — Total GMAN + Por Planta
 // ═══════════════════════════════════════════════════════════
 
-// Obtiene valor puntual para cualquier indicador, usando allData siempre (no filteredData)
-// para que el eje S11→S52 sea fijo y no dependa de los filtros de semana
+// Obtiene valor puntual — prioriza manual sobre seed, null si no hay dato real
 function getIndVal(planta, indKey, semana){
-  if(semana < SEM_DATOS_INICIO) return null;  // antes del inicio: sin dato histórico
-  const row = allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===semana);
-  // Si hay dato cargado (incluso en semanas futuras) lo mostramos; si no, null
-  if(row !== undefined) return row.valor;
-  return semana <= SEM_DATOS_FIN ? 0 : null;  // semanas pasadas sin registro = 0; futuras sin dato = null
+  if(semana < SEM_DATOS_INICIO) return null;
+  const manualRow = allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===semana&&d._manual);
+  const seedRow   = allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===semana&&d._seed);
+  const row       = manualRow || seedRow;
+  if(!row) return semana <= SEM_DATOS_FIN ? 0 : null;  // sin dato: 0 en pasado, null en futuro
+  if(row.valor === null) return null;                   // guión explícito → null en gráfico
+  return row.valor;
 }
 
 // Opciones Chart.js comunes para todos los gráficos de línea
@@ -1429,11 +1455,12 @@ function lineOpts(unidad, indKey){
 }
 
 
-// Genera array de comentarios alineado con LABELS_YEAR para un dataset
+// Genera array de comentarios alineado con LABELS_YEAR — prioriza manual sobre seed
 function buildComentarios(planta, indKey){
   return LABELS_YEAR.map((_,i)=>{
     const s = i + SEM_AXIS_INICIO;
-    const row = allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===s);
+    const row = allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===s&&d._manual)
+             || allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===s&&d._seed);
     return (row && row.comentario) ? row.comentario : null;
   });
 }
@@ -1613,16 +1640,16 @@ function cellClass(v){
   return 'bad';
 }
 
-// Calcula scores acumulados (suma de todas las semanas cargadas S11→SEM_DATOS_FIN)
+// Calcula scores acumulados — solo entradas con valor real (excluye null/guión)
 function calcScores(){
   return PLANTAS.map(planta=>{
     const vals={};
     let total=0;
     RANKING_INDS.forEach(ind=>{
-      // Suma acumulada de todas las semanas con dato cargado
       const suma = allData
-        .filter(d=>d.planta===planta && d.indicador===ind.key && d.semana<=SEM_DATOS_FIN)
-        .reduce((acc,d)=>acc+d.valor, 0);
+        .filter(d=>d.planta===planta && d.indicador===ind.key &&
+                   d.semana<=SEM_DATOS_FIN && d.valor !== null && d.valor !== undefined)
+        .reduce((acc,d)=>acc+(d.valor||0), 0);
       vals[ind.key]=suma;
       total+=suma;
     });
@@ -1778,15 +1805,44 @@ function selectWeek(s){
   document.querySelectorAll('#week-selector .week-btn').forEach(b=>{
     const sem = parseInt(b.dataset.sem);
     b.classList.toggle('active', sem === s);
-    if(sem === s){
-      b.classList.remove('filled');
-    } else if(sem >= SEM_DATOS_INICIO && sem <= SEM_DATOS_FIN){
-      b.classList.add('filled');
-    }
+    if(sem === s) b.classList.remove('filled');
+    else if(sem >= SEM_DATOS_INICIO && sem <= SEM_DATOS_FIN) b.classList.add('filled');
   });
+  preloadModalValue();
 }
 
 function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+function deleteEntry(){
+  const sem    = selectedWeekModal;
+  const resp   = document.getElementById('m-responsable').value;
+  const planta = document.getElementById('m-planta').value;
+  const indKey = document.getElementById('m-indicador').value;
+
+  allData = allData.filter(d=>!(
+    d.semana===sem && d.responsable===resp &&
+    d.planta===planta && d.indicador===indKey
+  ));
+
+  document.getElementById('m-valor').value = '';
+  document.getElementById('m-comentario').value = '';
+
+  closeModal();
+  filteredData = [...allData];
+  applyFilters();
+  syncSave();
+}
+
+// Precarga el valor existente cuando se cambia semana/planta/indicador en el modal
+function preloadModalValue(){
+  const sem    = selectedWeekModal;
+  const resp   = document.getElementById('m-responsable').value;
+  const planta = document.getElementById('m-planta').value;
+  const indKey = document.getElementById('m-indicador').value;
+  const row    = allData.find(d=>d.semana===sem&&d.responsable===resp&&d.planta===planta&&d.indicador===indKey);
+  document.getElementById('m-valor').value      = (row && row.valor !== null && row.valor !== undefined) ? row.valor : '';
+  document.getElementById('m-comentario').value = row ? (row.comentario||'') : '';
+}
 
 function updateModalUnit(){
   const key=document.getElementById('m-indicador').value;
@@ -1798,7 +1854,8 @@ function saveEntry(){
   const resp = document.getElementById('m-responsable').value;
   const planta     = document.getElementById('m-planta').value;
   const indKey     = document.getElementById('m-indicador').value;
-  const valor      = +document.getElementById('m-valor').value||0;
+  const valorRaw    = document.getElementById('m-valor').value.trim();
+  const valor       = valorRaw === '' ? null : +valorRaw;
   const comentario = document.getElementById('m-comentario').value.trim();
   const unidad     = UNIT_MAP[indKey]||'ut.';
   const ind        = INDICADORES.find(i=>i.key===indKey);
