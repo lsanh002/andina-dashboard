@@ -451,15 +451,15 @@ tbody td{padding:8px 10px;color:#2a3840}
   </div>
   <button onclick="syncLoad()" style="border:none;border-radius:8px;padding:7px 14px;
     font-size:.72rem;font-weight:700;cursor:pointer;background:var(--codelco);color:#fff">
-    🔄 Actualizar datos
+    🔄 Actualizar
   </button>
   <button onclick="copyBinId()" style="border:none;border-radius:8px;padding:7px 14px;
     font-size:.72rem;font-weight:700;cursor:pointer;background:var(--navy);color:#fff">
-    📋 Compartir ID con equipo
+    📋 Copiar URL
   </button>
   <button onclick="setBinId()" style="border:none;border-radius:8px;padding:7px 14px;
     font-size:.72rem;font-weight:700;cursor:pointer;background:var(--amber);color:var(--navy)">
-    🔗 Ingresar ID del equipo
+    🔗 Ingresar URL equipo
   </button>
 </div>
 
@@ -1882,18 +1882,14 @@ function saveEntry(){
 // Click outside modal to close
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
 
-// ===== JSONBIN SYNC =====
-const JSONBIN_KEY  = '$2a$10$0GIrwxaouXOFTgqoelujXOlRalpkRjKAGMNF4icbMq7xrQU824coW';
-const JSONBIN_API  = 'https://api.jsonbin.io/v3';
-const BIN_NAME     = 'Dashboard-Andina-2025';
-let   BIN_ID       = localStorage.getItem('andina_bin_id') || '6a0d9c2b6610dd3ae8769059';
+// ===== GOOGLE SHEETS SYNC =====
+// Usa Google Sheets como base de datos compartida (sin problemas de CORS)
+const SHEET_ID   = '1cZx4bNaCBZgrCasn2tLMzSqO7kRpojCAyq3LIe71WPU';
+const SHEET_NAME = 'Hoja1';
+const APPS_URL   = `https://script.google.com/macros/s/DEPLOY_ID/exec`;
 
-// Headers comunes — X-Master-Key habilita CORS en JSONBin
-const JB_HEADERS = {
-  'Content-Type':  'application/json',
-  'X-Master-Key':  JSONBIN_KEY,
-  'X-Bin-Private': 'false'
-};
+// URL pública para leer la hoja (no requiere autenticación)
+const READ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
 
 function setSyncStatus(msg, color){
   const el = document.getElementById('sync-status');
@@ -1903,100 +1899,95 @@ function setSyncStatus(msg, color){
   el.style.color      = color==='ok'?'#2e7d32':color==='err'?'#c13832':'#f57f17';
 }
 
-async function crearBin(){
-  const payload = { version:2, entries:[], updatedAt: new Date().toISOString() };
-  const res  = await fetch(`${JSONBIN_API}/b`,{
-    method:'POST',
-    headers:{...JB_HEADERS, 'X-Bin-Name':BIN_NAME},
-    body: JSON.stringify(payload)
-  });
-  const data = await res.json();
-  return data.metadata?.id || null;
-}
-
+// Serializar allData manual a JSON y guardarlo en celda A2 via Apps Script
 async function syncSave(){
-  setSyncStatus('💾 Guardando en la nube...','warn');
+  setSyncStatus('💾 Guardando...','warn');
   try {
-    const entries = allData.filter(d=>d._manual);
-    const payload = { version:2, entries, updatedAt: new Date().toISOString() };
-
-    if(!BIN_ID){
-      BIN_ID = await crearBin();
-      if(BIN_ID) localStorage.setItem('andina_bin_id', BIN_ID);
-    }
-    if(!BIN_ID) throw new Error('No se pudo crear el bin');
-
-    await fetch(`${JSONBIN_API}/b/${BIN_ID}`,{
-      method:'PUT',
-      headers: JB_HEADERS,
-      body: JSON.stringify(payload)
-    });
-    setSyncStatus(`✅ Guardado · ${new Date().toLocaleTimeString('es-CL')} &nbsp;|&nbsp; <strong>ID: ${BIN_ID}</strong> &nbsp;<button onclick="copyBinId()" style="border:none;background:var(--codelco);color:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.68rem">📋 Copiar ID</button>`,'ok');
-  } catch(e){
-    setSyncStatus('⚠ Error al guardar — revisa conexión a internet','err');
-    console.error(e);
-  }
-}
-
-async function syncLoad(){
-  setSyncStatus('🔄 Conectando con la nube...','warn');
-  try {
-    if(!BIN_ID){
-      BIN_ID = await crearBin();
-      if(BIN_ID){
-        localStorage.setItem('andina_bin_id', BIN_ID);
-        setSyncStatus(`✅ Bin creado · <strong>ID: ${BIN_ID}</strong> &nbsp;<button onclick="copyBinId()" style="border:none;background:var(--codelco);color:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.68rem">📋 Copiar ID para el equipo</button>`,'ok');
-      } else {
-        setSyncStatus('⚠ No se pudo conectar con JSONBin','err');
-      }
+    const entries  = allData.filter(d=>d._manual);
+    const payload  = JSON.stringify({version:2, entries, updatedAt: new Date().toISOString()});
+    // Usar Apps Script Web App para escribir
+    const url = localStorage.getItem('apps_script_url');
+    if(!url){
+      // Sin Apps Script — guardar en localStorage como respaldo
+      localStorage.setItem('andina_data', payload);
+      setSyncStatus('⚠ Guardado localmente (configura Apps Script para compartir)','warn');
       return;
     }
-
-    const res  = await fetch(`${JSONBIN_API}/b/${BIN_ID}/latest`,{
-      headers: JB_HEADERS
-    });
-    const data = await res.json();
-    const entries = data?.record?.entries || [];
-
-    if(entries.length > 0){
-      entries.forEach(e=>{
-        e._manual = true;
-        allData = allData.filter(d=>!(
-          d.semana===e.semana && d.planta===e.planta &&
-          d.indicador===e.indicador && d.responsable===e.responsable
-        ));
-        allData.push(e);
-      });
-      filteredData = [...allData];
-      updateAll();
-      setSyncStatus(`✅ ${entries.length} registros cargados · ${new Date().toLocaleTimeString('es-CL')} &nbsp;|&nbsp; <strong>ID: ${BIN_ID}</strong> &nbsp;<button onclick="copyBinId()" style="border:none;background:var(--codelco);color:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.68rem">📋 Copiar ID</button>`,'ok');
-    } else {
-      setSyncStatus(`ℹ Sin datos aún · <strong>ID: ${BIN_ID}</strong> &nbsp;<button onclick="copyBinId()" style="border:none;background:var(--codelco);color:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.68rem">📋 Copiar ID para el equipo</button>`,'warn');
-    }
+    await fetch(url, {method:'POST', body: payload, mode:'no-cors'});
+    localStorage.setItem('andina_data', payload);
+    setSyncStatus(`✅ Guardado · ${new Date().toLocaleTimeString('es-CL')}`,'ok');
   } catch(e){
-    setSyncStatus('⚠ Sin conexión — trabajando con datos locales','err');
+    // Guardar localmente como respaldo
+    const entries = allData.filter(d=>d._manual);
+    localStorage.setItem('andina_data', JSON.stringify({version:2, entries}));
+    setSyncStatus('✅ Guardado localmente','ok');
     console.error(e);
   }
+}
+
+// Cargar datos desde localStorage (respaldo local)
+async function syncLoad(){
+  setSyncStatus('🔄 Cargando datos...','warn');
+  try{
+    // Intentar cargar desde Apps Script si está configurado
+    const appsUrl = localStorage.getItem('apps_script_url');
+    if(appsUrl){
+      try{
+        const res  = await fetch(appsUrl + '?action=read', {mode:'cors'});
+        const data = await res.json();
+        if(data?.entries?.length > 0){
+          procesarEntradas(data.entries);
+          setSyncStatus(`✅ ${data.entries.length} registros cargados de la nube · ${new Date().toLocaleTimeString('es-CL')}`,'ok');
+          return;
+        }
+      } catch(e){ console.log('Apps Script no disponible, usando local'); }
+    }
+
+    // Cargar desde localStorage
+    const local = localStorage.getItem('andina_data');
+    if(local){
+      const data = JSON.parse(local);
+      if(data?.entries?.length > 0){
+        procesarEntradas(data.entries);
+        setSyncStatus(`✅ ${data.entries.length} registros cargados · ${new Date().toLocaleTimeString('es-CL')}`,'ok');
+        return;
+      }
+    }
+    setSyncStatus('ℹ Sin datos guardados aún — carga tu primera semana','warn');
+  } catch(e){
+    setSyncStatus('⚠ Error al cargar datos','err');
+    console.error(e);
+  }
+}
+
+function procesarEntradas(entries){
+  entries.forEach(e=>{
+    e._manual = true;
+    allData = allData.filter(d=>!(
+      d.semana===e.semana && d.planta===e.planta &&
+      d.indicador===e.indicador && d.responsable===e.responsable
+    ));
+    allData.push(e);
+  });
+  filteredData = [...allData];
+  updateAll();
 }
 
 function copyBinId(){
-  if(!BIN_ID){ alert('Aún no hay ID disponible. Espera a que se conecte.'); return; }
-  // Crear un input temporal para copiar
+  const url = localStorage.getItem('apps_script_url') || 'No configurado';
   const inp = document.createElement('input');
-  inp.value = BIN_ID;
+  inp.value = url;
   document.body.appendChild(inp);
-  inp.select();
-  inp.setSelectionRange(0,99999);
+  inp.select(); inp.setSelectionRange(0,99999);
   document.execCommand('copy');
   document.body.removeChild(inp);
-  alert(`✅ ID copiado al portapapeles:\n\n${BIN_ID}\n\nEnvía este ID a tus planificadores por Teams.\nEllos deben pegarlo al hacer clic en "Ingresar ID del equipo".`);
+  alert('URL copiada: ' + url);
 }
 
 function setBinId(){
-  const id = prompt('Pega el BIN ID que te compartió el administrador:');
-  if(id && id.trim()){
-    BIN_ID = id.trim();
-    localStorage.setItem('andina_bin_id', BIN_ID);
+  const url = prompt('Pega la URL del Apps Script para compartir datos con el equipo:');
+  if(url && url.trim()){
+    localStorage.setItem('apps_script_url', url.trim());
     syncLoad();
   }
 }
