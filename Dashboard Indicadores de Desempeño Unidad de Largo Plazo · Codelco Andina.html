@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard Indicadores de Desempeño Unidad de Largo Plazo · Codelco Andina</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#36424A;--codelco:#0098AA;--orange:#E55302;--amber:#FFAA00;
+  --red:#C13832;--green:#2E7D32;--line:#D8E3E7;--muted:#64717A;
+  --bg:#F5F9FA;--card:#FFFFFF;--radius:14px;
+  --shadow:0 8px 28px rgba(54,66,74,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  font-family:"Segoe UI",Roboto,Arial,sans-serif;
+  color:#25313A;
+  background:radial-gradient(circle at 10% 0%,rgba(0,152,170,.11),transparent 30%),
+             radial-gradient(circle at 94% 3%,rgba(229,83,2,.08),transparent 28%),
+             linear-gradient(180deg,#F0F6F8,#E8F2F5);
+  min-height:100vh;padding:14px;
+}
+
+/* HEADER */
+.hdr{
+  background:var(--navy);
+  border-radius:var(--radius);
+  padding:18px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+  box-shadow:var(--shadow);
+}
+.hdr-left{display:flex;align-items:center;gap:16px}
+.hdr-logo{
+  width:52px;height:52px;border-radius:10px;
+  background:linear-gradient(135deg,var(--codelco),#006a77);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:18px;color:#fff;letter-spacing:-1px;
+}
+.hdr h1{font-size:1.25rem;font-weight:700;color:#fff;line-height:1.2}
+.hdr p{font-size:.75rem;color:rgba(255,255,255,.65);margin-top:2px}
+.hdr-badges{display:flex;gap:10px}
+.hdr-badge{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+  border-radius:10px;padding:8px 14px;text-align:center;
+}
+.hdr-badge .lbl{font-size:.62rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px}
+.hdr-badge .val{font-size:1.1rem;font-weight:800;color:#fff}
+.hdr-badge.teal .val{color:var(--codelco)}
+.hdr-badge.orange .val{color:var(--amber)}
+
+/* WEEK BANNER */
+.week-banner{
+  background:linear-gradient(90deg,var(--codelco),#006a77);
+  color:#fff;border-radius:10px;padding:10px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;font-size:.82rem;
+}
+.week-banner strong{font-size:1rem}
+
+/* FILTERS */
+.filters{
+  background:var(--card);border-radius:var(--radius);
+  padding:14px 18px;margin-bottom:14px;
+  box-shadow:var(--shadow);
+  display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;
+}
+.filter-group{display:flex;flex-direction:column;gap:4px;min-width:160px}
+.filter-group label{font-size:.7rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--muted)}
+.filter-group select{
+  border:1.5px solid var(--line);border-radius:8px;
+  padding:7px 10px;font-size:.82rem;color:var(--navy);
+  background:#fff;cursor:pointer;outline:none;
+  transition:border-color .2s;
+}
+.filter-group select:focus{border-color:var(--codelco)}
+.btn-reset{
+  background:var(--orange);color:#fff;border:none;
+  border-radius:8px;padding:8px 18px;font-size:.82rem;font-weight:700;
+  cursor:pointer;align-self:flex-end;transition:opacity .2s;
+}
+.btn-reset:hover{opacity:.85}
+.btn-entry{
+  background:var(--codelco);color:#fff;border:none;
+  border-radius:8px;padding:8px 18px;font-size:.82rem;font-weight:700;
+  cursor:pointer;align-self:flex-end;transition:opacity .2s;margin-left:auto;
+}
+.btn-entry:hover{opacity:.85}
+
+/* GRID KPI */
+.kpi-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:12px;margin-bottom:14px;
+}
+.kpi{
+  background:var(--card);border-radius:var(--radius);
+  padding:16px;box-shadow:var(--shadow);
+  border-top:3px solid var(--codelco);
+  position:relative;overflow:hidden;
+}
+.kpi.orange{border-color:var(--orange)}
+.kpi.amber{border-color:var(--amber)}
+.kpi.red{border-color:var(--red)}
+.kpi.green{border-color:var(--green)}
+.kpi-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted);font-weight:600;margin-bottom:6px}
+.kpi-value{font-size:1.9rem;font-weight:800;color:var(--navy);line-height:1}
+.kpi-sub{font-size:.7rem;color:var(--muted);margin-top:4px}
+.kpi-icon{
+  position:absolute;right:14px;top:14px;font-size:1.5rem;opacity:.15;
+}
+
+/* SECTION HEADER */
+.section-hdr{
+  font-size:.78rem;text-transform:uppercase;letter-spacing:.7px;
+  font-weight:700;color:var(--muted);margin:16px 0 8px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-hdr::after{content:'';flex:1;height:1px;background:var(--line)}
+
+/* CHARTS GRID */
+.charts-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;
+}
+.charts-grid.triple{grid-template-columns:2fr 1fr}
+.chart-card{
+  background:var(--card);border-radius:var(--radius);
+  padding:16px;box-shadow:var(--shadow);
+}
+.chart-card h3{
+  font-size:.78rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--navy);margin-bottom:12px;
+  display:flex;align-items:center;gap:6px;
+}
+.chart-card h3 span{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--codelco);
+}
+.chart-card h3 span.orange{background:var(--orange)}
+.chart-card h3 span.amber{background:var(--amber)}
+.chart-card canvas{max-height:240px}
+
+/* COMPARISON TABLE */
+.table-wrap{
+  background:var(--card);border-radius:var(--radius);
+  padding:16px;box-shadow:var(--shadow);margin-bottom:14px;
+  overflow-x:auto;
+}
+.table-wrap h3{
+  font-size:.78rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--navy);margin-bottom:12px;
+}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+thead tr{background:var(--navy);color:#fff}
+thead th{padding:9px 10px;text-align:left;font-weight:600;
+  font-size:.68rem;text-transform:uppercase;letter-spacing:.4px}
+tbody tr{border-bottom:1px solid var(--line);transition:background .15s}
+tbody tr:hover{background:#f0f7f9}
+tbody td{padding:8px 10px;color:#2a3840}
+.pill{
+  display:inline-block;padding:2px 8px;border-radius:20px;
+  font-size:.67rem;font-weight:700;text-transform:uppercase;
+}
+.pill.good{background:#e8f5e9;color:#2e7d32}
+.pill.warn{background:#fff8e1;color:#f57f17}
+.pill.bad{background:#fde8e8;color:#c13832}
+.pill.neutral{background:#e8f0f3;color:#36424a}
+
+/* ENTRY MODAL */
+.modal-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.45);z-index:1000;
+  align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:#fff;border-radius:var(--radius);
+  padding:24px;width:min(560px,96vw);
+  box-shadow:0 24px 60px rgba(0,0,0,.25);
+  max-height:90vh;overflow-y:auto;
+}
+.modal h2{font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:4px}
+.modal p{font-size:.75rem;color:var(--muted);margin-bottom:16px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-grid.full{grid-template-columns:1fr}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:.68rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.4px;color:var(--muted)}
+.form-group input,.form-group select{
+  border:1.5px solid var(--line);border-radius:8px;
+  padding:8px 10px;font-size:.82rem;color:var(--navy);outline:none;
+  transition:border-color .2s;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--codelco)}
+.modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.btn-save{
+  background:var(--codelco);color:#fff;border:none;border-radius:8px;
+  padding:9px 20px;font-size:.82rem;font-weight:700;cursor:pointer;
+}
+.btn-cancel{
+  background:var(--line);color:var(--navy);border:none;border-radius:8px;
+  padding:9px 20px;font-size:.82rem;font-weight:700;cursor:pointer;
+}
+.week-grid{
+  display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:12px;
+}
+.week-btn{
+  border:1.5px solid var(--line);border-radius:6px;
+  padding:5px;text-align:center;cursor:pointer;font-size:.7rem;
+  background:#fff;transition:all .15s;color:var(--navy);
+}
+.week-btn.active{background:var(--codelco);color:#fff;border-color:var(--codelco)}
+.week-btn.filled{background:#e8f5e9;border-color:#a5d6a7;color:#2e7d32;font-weight:700;cursor:pointer}
+.week-btn.filled:hover{background:#c8e6c9;border-color:#81c784}
+.week-btn:hover:not(.active):not(.filled){background:#f0f7f9}
+
+/* FOOTER */
+.footer{
+  text-align:center;font-size:.68rem;color:var(--muted);
+  margin-top:14px;padding:10px;
+}
+
+/* PROGRESS BAR */
+.progress-bar{
+  height:6px;background:var(--line);border-radius:3px;overflow:hidden;
+  margin-top:6px;
+}
+.progress-fill{height:100%;border-radius:3px;background:var(--codelco);
+  transition:width .6s ease}
+
+/* ===== BANNER RANKING PLANTA FILTRADA ===== */
+.rank-banner{
+  border-radius:var(--radius);padding:16px 22px;
+  display:flex;align-items:center;gap:18px;
+  margin-bottom:14px;box-shadow:var(--shadow);
+  animation:slidein .3s ease;
+}
+@keyframes slidein{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.rank-banner-pos{
+  font-size:3.5rem;font-weight:900;line-height:1;color:#fff;
+  min-width:70px;text-align:center;
+}
+.rank-banner-medal{font-size:2rem;line-height:1}
+.rank-banner-info{flex:1}
+.rank-banner-planta{font-size:1rem;font-weight:800;color:#fff;margin-bottom:2px}
+.rank-banner-resp{font-size:.75rem;color:rgba(255,255,255,.75);margin-bottom:6px}
+.rank-banner-chips{display:flex;gap:8px;flex-wrap:wrap}
+.rank-chip{
+  background:rgba(255,255,255,.18);color:#fff;border-radius:6px;
+  padding:3px 9px;font-size:.68rem;font-weight:700;
+}
+.rank-banner-total{
+  text-align:right;color:#fff;
+}
+.rank-banner-total .lbl{font-size:.65rem;opacity:.75;text-transform:uppercase;letter-spacing:.5px}
+.rank-banner-total .val{font-size:2rem;font-weight:900;line-height:1}
+.rank-banner-total .est{font-size:.72rem;margin-top:4px;
+  background:rgba(255,255,255,.2);border-radius:6px;padding:2px 8px;display:inline-block}
+
+.podio-card{
+  border-radius:12px;padding:16px 14px;text-align:center;
+  min-width:140px;flex:1;max-width:180px;
+  box-shadow:0 6px 20px rgba(0,0,0,.12);
+  position:relative;transition:transform .2s;
+}
+.podio-card:hover{transform:translateY(-3px)}
+.podio-pos{
+  font-size:2rem;font-weight:900;line-height:1;margin-bottom:4px;
+}
+.podio-medal{font-size:1.6rem;margin-bottom:4px}
+.podio-planta{font-size:.72rem;font-weight:700;color:#fff;line-height:1.3;margin-bottom:2px}
+.podio-resp{font-size:.62rem;color:rgba(255,255,255,.75)}
+.podio-score{
+  margin-top:8px;font-size:.75rem;font-weight:800;
+  background:rgba(255,255,255,.2);border-radius:6px;padding:3px 8px;color:#fff;
+}
+.rank-cell{
+  padding:9px 8px;text-align:center;font-weight:700;
+  font-size:.78rem;border-bottom:1px solid var(--line);
+}
+.rank-cell.good{color:#2E7D32}
+.rank-cell.warn{color:#f57f17}
+.rank-cell.bad{color:#C13832}
+.rank-cell.zero{color:#aaa;font-weight:400}
+.rank-pos{
+  width:36px;height:36px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:.9rem;color:#fff;
+}
+@media(max-width:768px){.podio-card{min-width:100px}}
+
+
+@media(max-width:768px){
+  .charts-grid,.charts-grid.triple{grid-template-columns:1fr}
+  .hdr{flex-direction:column;gap:12px}
+  .hdr-badges{flex-wrap:wrap}
+  .week-grid{grid-template-columns:repeat(6,1fr)}
+}
+.sem-block{
+  background:var(--card);border-radius:var(--radius);
+  box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden;
+}
+.sem-block-hdr:hover{background:#2d3940}
+.sem-block-hdr{
+  background:var(--navy);color:#fff;
+  padding:10px 16px;
+  display:flex;align-items:center;gap:10px;
+  font-size:.78rem;font-weight:700;letter-spacing:.3px;
+  transition:background .15s;
+}
+.sem-block-hdr .ind-badge{
+  background:rgba(255,255,255,.15);border-radius:6px;
+  padding:2px 10px;font-size:.68rem;font-weight:600;
+  color:rgba(255,255,255,.85);
+}
+.sem-scroll{overflow-x:auto;padding:0 4px 8px}
+.sem-table{
+  border-collapse:separate;border-spacing:2px;
+  font-size:.7rem;min-width:900px;width:100%;
+  margin:6px 4px;
+}
+.sem-table th{
+  padding:5px 4px;text-align:center;font-weight:600;
+  color:var(--muted);font-size:.63rem;white-space:nowrap;
+}
+.sem-table th.area-col{
+  text-align:left;padding-left:10px;min-width:170px;
+  color:var(--navy);font-size:.68rem;
+}
+.sem-table th.sem-hdr{min-width:26px}
+.sem-table th.sem-hdr.current{color:var(--navy);font-weight:800;font-size:.68rem}
+.sem-table th.sem-hdr.future{color:#ccc}
+.sem-cell{
+  width:26px;height:26px;border-radius:5px;
+  text-align:center;vertical-align:middle;
+  font-weight:700;font-size:.68rem;cursor:pointer;
+  transition:transform .12s,box-shadow .12s;
+  position:relative;
+}
+.sem-cell:hover{transform:scale(1.25);box-shadow:0 3px 10px rgba(0,0,0,.25);z-index:10}
+.sem-cell.c-green{background:#2E7D32;color:#fff}
+.sem-cell.c-amber{background:#FFAA00;color:#25313A}
+.sem-cell.c-red{background:#C13832;color:#fff}
+.sem-cell.c-future{background:rgba(180,200,210,.12);color:#bbb;font-size:.75rem;cursor:default;letter-spacing:0}
+.sem-cell.c-empty{background:#f5f9fa;color:#ddd;font-size:.75rem}
+.sem-cell.c-future:hover{transform:none;box-shadow:none}
+.sem-area-label{
+  text-align:left;padding:6px 10px;font-weight:600;
+  color:var(--navy);font-size:.7rem;white-space:nowrap;
+  border-right:2px solid var(--line);
+}
+.sem-area-label span{
+  display:inline-block;width:8px;height:8px;
+  border-radius:50%;margin-right:6px;vertical-align:middle;
+}
+.sem-total-row td{
+  background:#f0f5f8;font-weight:700;
+  border-top:2px solid var(--line);
+}
+.sem-total-row .sem-cell{font-size:.63rem}
+
+/* Tooltip personalizado */
+#sem-tooltip{
+  position:fixed;display:none;
+  background:var(--navy);color:#fff;
+  border-radius:8px;padding:8px 12px;
+  font-size:.72rem;line-height:1.5;
+  box-shadow:0 8px 20px rgba(0,0,0,.3);
+  z-index:9999;pointer-events:none;
+  max-width:200px;
+}
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div class="hdr-logo">CA</div>
+    <div>
+      <h1>Dashboard Indicadores de Desempeño<br>Unidad de Largo Plazo</h1>
+      <p>División Andina · Gerencia de Mantenimiento · Unidad de Planificación de Largo Plazo</p>
+    </div>
+  </div>
+  <div class="hdr-badges">
+    <div class="hdr-badge teal">
+      <div class="lbl">Semana Actual</div>
+      <div class="val" id="hdr-semana">S20</div>
+    </div>
+    <div class="hdr-badge">
+      <div class="lbl">Planificadores</div>
+      <div class="val">5</div>
+    </div>
+    <div class="hdr-badge orange">
+      <div class="lbl">Avance Año</div>
+      <div class="val" id="hdr-avance">38%</div>
+    </div>
+  </div>
+</div>
+
+<!-- WEEK BANNER -->
+<div class="week-banner">
+  <span>📅 Período con datos: <strong>Semana 11 → Semana 20</strong> · S1→S10 sin datos · S21→S52 pendientes</span>
+  <span>Próxima carga: Semana 21 · Lunes</span>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <div class="filter-group">
+    <label>Responsable</label>
+    <select id="f-responsable" onchange="applyFilters()">
+      <option value="">Todos</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Planta</label>
+    <select id="f-planta" onchange="applyFilters()">
+      <option value="">Todas</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Indicador</label>
+    <select id="f-indicador" onchange="applyFilters()">
+      <option value="">Todos</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Semana (Desde)</label>
+    <select id="f-sem-desde" onchange="applyFilters()">
+      <option value="1">S1</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Semana (Hasta)</label>
+    <select id="f-sem-hasta" onchange="applyFilters()">
+      <option value="20">S20</option>
+    </select>
+  </div>
+  <button class="btn-reset" onclick="resetFilters()">↺ Limpiar</button>
+  <button class="btn-entry" onclick="openModal()">＋ Cargar Semana</button>
+</div>
+
+<!-- BARRA DE SINCRONIZACIÓN NUBE -->
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+  <div id="sync-status" style="flex:1;font-size:.72rem;font-weight:600;border-radius:8px;
+       padding:7px 14px;background:#fff8e1;color:#f57f17;min-width:200px">
+    🔄 Conectando con la nube...
+  </div>
+  <button onclick="syncLoad()" style="border:none;border-radius:8px;padding:7px 14px;
+    font-size:.72rem;font-weight:700;cursor:pointer;background:var(--codelco);color:#fff">
+    🔄 Actualizar datos
+  </button>
+  <button onclick="copyBinId()" style="border:none;border-radius:8px;padding:7px 14px;
+    font-size:.72rem;font-weight:700;cursor:pointer;background:var(--navy);color:#fff">
+    📋 Compartir ID con equipo
+  </button>
+  <button onclick="setBinId()" style="border:none;border-radius:8px;padding:7px 14px;
+    font-size:.72rem;font-weight:700;cursor:pointer;background:var(--amber);color:var(--navy)">
+    🔗 Ingresar ID del equipo
+  </button>
+</div>
+
+<!-- KPIs -->
+<div class="section-hdr">📊 Resumen del período filtrado</div>
+<div class="kpi-grid" id="kpi-grid">
+  <div class="kpi"><div class="kpi-icon">📋</div>
+    <div class="kpi-label">Total Registros</div>
+    <div class="kpi-value" id="k-total">—</div>
+    <div class="kpi-sub">entradas de datos</div>
+  </div>
+  <div class="kpi orange"><div class="kpi-icon">🏭</div>
+    <div class="kpi-label">Plantas activas</div>
+    <div class="kpi-value" id="k-plantas">—</div>
+    <div class="kpi-sub">con datos en período</div>
+  </div>
+  <div class="kpi amber"><div class="kpi-icon">📈</div>
+    <div class="kpi-label">Semanas con datos</div>
+    <div class="kpi-value" id="k-semanas">—</div>
+    <div class="kpi-sub">de 52 semanas del año</div>
+    <div class="progress-bar"><div class="progress-fill" id="k-progress" style="width:0%"></div></div>
+  </div>
+  <div class="kpi green"><div class="kpi-icon">👷</div>
+    <div class="kpi-label">Responsables</div>
+    <div class="kpi-value" id="k-resp">—</div>
+    <div class="kpi-sub">planificadores activos</div>
+  </div>
+  <div class="kpi"><div class="kpi-icon">📌</div>
+    <div class="kpi-label">Indicadores distintos</div>
+    <div class="kpi-value" id="k-ind">—</div>
+    <div class="kpi-sub">métricas monitoreadas</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECCIÓN FINAL · RANKING DE DESEMPEÑO POR PLANTA
+     ═══════════════════════════════════════════════ -->
+<div class="section-hdr" style="cursor:pointer" onclick="toggleRankingTable()">
+  🏆 Ranking de Desempeño por Planta — Semana actual
+  <button id="btn-ranking-table" onclick="event.stopPropagation();toggleRankingTable()"
+    style="border:none;border-radius:6px;padding:3px 12px;font-size:.72rem;font-weight:700;
+           cursor:pointer;background:var(--codelco);color:#fff;margin-left:8px">▲ Ocultar</button>
+</div>
+
+<div id="ranking-general" style="background:var(--card);border-radius:var(--radius);padding:16px 20px;
+            box-shadow:var(--shadow);margin-bottom:14px">
+
+  <!-- Nota metodológica -->
+  <div style="font-size:.7rem;color:var(--muted);margin-bottom:14px;
+              background:#f0f6f8;border-radius:8px;padding:8px 12px;border-left:3px solid var(--codelco)">
+    <strong>Metodología:</strong> Se acumulan los valores de todas las semanas cargadas (S${SEM_DATOS_INICIO}→S${SEM_DATOS_FIN}) para cada indicador por planta (excepto Trabajo Futuro).
+    Menor puntaje acumulado = mejor desempeño histórico.
+  </div>
+
+  <!-- Podio top 3 -->
+  <div id="ranking-podio" style="display:flex;justify-content:center;align-items:flex-end;
+       gap:12px;margin-bottom:20px;flex-wrap:wrap"></div>
+
+  <div id="ranking-table-wrap">
+  <!-- Tabla ranking completa -->
+  <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+    <thead>
+      <tr style="background:var(--navy);color:#fff">
+        <th style="padding:10px 14px;text-align:center;width:50px;font-size:.7rem;letter-spacing:.5px">POS</th>
+        <th style="padding:10px 14px;text-align:left;font-size:.7rem;letter-spacing:.5px">PLANTA</th>
+        <th style="padding:10px 14px;text-align:left;font-size:.7rem;letter-spacing:.5px">RESPONSABLE</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="Tarjetas Verdes">TV</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="Reportes Peligro">RP</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="Acc. Correctivas">AC</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="PAM sin ejecutar">PAM</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="Acciones RDP">RDP</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="Avisos sin Tratar P">AV</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="OT Pendientes">OT</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="Backlog">BL</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="Rep. sin OC">R-OC</th>
+        <th style="padding:10px 8px;text-align:center;font-size:.62rem" title="Rep. con OC">R+OC</th>
+        <th style="padding:10px 14px;text-align:center;font-size:.7rem;letter-spacing:.5px">TOTAL</th>
+      </tr>
+    </thead>
+    <tbody id="ranking-body"></tbody>
+  </table>
+
+  <!-- Leyenda columnas -->
+  <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;font-size:.67rem;color:var(--muted)">
+    <span><strong>TV</strong> Tarjetas Verdes</span>
+    <span><strong>RP</strong> Reportes Peligro</span>
+    <span><strong>AC</strong> Acc. Correctivas</span>
+    <span><strong>PAM</strong> PAM sin ejecutar</span>
+    <span><strong>RDP</strong> Acciones RDP</span>
+    <span><strong>AV</strong> Avisos sin Tratar P</span>
+    <span><strong>OT</strong> OT Pendientes</span>
+    <span><strong>BL</strong> Backlog</span>
+    <span><strong>R-OC</strong> Rep. sin OC</span>
+    <span><strong>R+OC</strong> Rep. con OC</span>
+  </div>
+  </div><!-- /ranking-table-wrap -->
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECCIÓN 1 · INDICADORES SEMÁFORO — TABLAS S1→S52
+     ══════════════════════════════════════════════════ -->
+<div class="section-hdr">🚦 Indicadores de Gestión — Semáforo por Área · S1→S52</div>
+
+<!-- Leyenda semáforo -->
+<div style="display:flex;gap:14px;align-items:center;margin-bottom:10px;flex-wrap:wrap;font-size:.72rem;color:var(--muted)">
+  <span style="font-weight:700;color:var(--navy)">Lectura del color:</span>
+  <span><span style="display:inline-block;width:12px;height:12px;background:#2E7D32;border-radius:3px;vertical-align:middle"></span> = 0 &nbsp;(sin pendiente)</span>
+  <span><span style="display:inline-block;width:12px;height:12px;background:#FFAA00;border-radius:3px;vertical-align:middle"></span> = 1–3 &nbsp;(atención)</span>
+  <span><span style="display:inline-block;width:12px;height:12px;background:#C13832;border-radius:3px;vertical-align:middle"></span> ≥ 4 &nbsp;(crítico)</span>
+  <span><span style="display:inline-block;width:12px;height:12px;background:#b0c4ce;border-radius:3px;vertical-align:middle;opacity:.5"></span> sin dato</span>
+  <span style="margin-left:auto;font-size:.68rem;color:var(--muted)">Haga clic en una celda para ver detalle</span>
+</div>
+
+<div id="planta-rank-banner"></div>
+<div id="semaforo-tables"></div>
+
+<!-- CHARTS ROW 1: Barras por Planta + Línea temporal -->
+<!-- ══════════════════════════════════════════════════
+     SECCIÓN 2 · AVISOS PRIORIDAD P — GRÁFICOS DE LÍNEA
+     ══════════════════════════════════════════════════ -->
+<div class="section-hdr"><span style="color:var(--orange)">▐</span> Avisos sin Tratar Prioridad P — Evolución Semanal S1→S52</div>
+
+<div class="charts-grid" id="avisos-grid">
+  <!-- Gráfico izquierdo: total división O planta única -->
+  <div class="chart-card">
+    <h3 id="avisos-left-title"><span></span> …</h3>
+    <div style="position:relative;height:240px">
+      <canvas id="chart-avisos-left"></canvas>
+    </div>
+  </div>
+  <!-- Gráfico derecho: 5 líneas por planta O se oculta si hay filtro de planta -->
+  <div class="chart-card" id="avisos-right-card">
+    <h3 id="avisos-right-title"><span class="orange"></span> …</h3>
+    <div style="position:relative;height:240px">
+      <canvas id="chart-avisos-right"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECCIÓN: OT PRIORIDAD P PENDIENTES ═══ -->
+<div class="section-hdr"><span style="color:var(--codelco)">▐</span> OT Prioridad P Pendientes — Evolución S11→S52</div>
+<div class="charts-grid" id="grid-ot">
+  <div class="chart-card">
+    <h3 id="title-ot-left"><span></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-ot-left"></canvas></div>
+  </div>
+  <div class="chart-card" id="card-ot-right">
+    <h3 id="title-ot-right"><span class="orange"></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-ot-right"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ SECCIÓN: TRABAJO FUTURO ═══ -->
+<div class="section-hdr"><span style="color:var(--orange)">▐</span> Trabajo Futuro OTs (HH) Prioridad P — Evolución S11→S52</div>
+<div class="charts-grid" id="grid-tf">
+  <div class="chart-card">
+    <h3 id="title-tf-left"><span></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-tf-left"></canvas></div>
+  </div>
+  <div class="chart-card" id="card-tf-right">
+    <h3 id="title-tf-right"><span class="orange"></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-tf-right"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ SECCIÓN: BACKLOG ═══ -->
+<div class="section-hdr"><span style="color:var(--amber)">▐</span> Backlog (HH) — Evolución S11→S52</div>
+<div class="charts-grid" id="grid-bl">
+  <div class="chart-card">
+    <h3 id="title-bl-left"><span></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-bl-left"></canvas></div>
+  </div>
+  <div class="chart-card" id="card-bl-right">
+    <h3 id="title-bl-right"><span class="amber"></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-bl-right"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ SECCIÓN: REPUESTOS CRÍTICOS SIN OC ═══ -->
+<div class="section-hdr"><span style="color:var(--red)">▐</span> Repuestos Críticos sin Stock y Sin OC — Evolución S11→S52</div>
+<div class="charts-grid" id="grid-rsnoc">
+  <div class="chart-card">
+    <h3 id="title-rsnoc-left"><span></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-rsnoc-left"></canvas></div>
+  </div>
+  <div class="chart-card" id="card-rsnoc-right">
+    <h3 id="title-rsnoc-right"><span class="orange"></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-rsnoc-right"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══ SECCIÓN: REPUESTOS CRÍTICOS CON OC ═══ -->
+<div class="section-hdr"><span style="color:var(--green)">▐</span> Repuestos Críticos sin Stock Con OC — Evolución S11→S52</div>
+<div class="charts-grid" id="grid-rcoc">
+  <div class="chart-card">
+    <h3 id="title-rcoc-left"><span></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-rcoc-left"></canvas></div>
+  </div>
+  <div class="chart-card" id="card-rcoc-right">
+    <h3 id="title-rcoc-right"><span class="orange"></span> …</h3>
+    <div style="position:relative;height:240px"><canvas id="chart-rcoc-right"></canvas></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  Codelco División Andina · Gerencia de Mantenimiento · Planificación de Largo Plazo · 2025
+</div>
+
+<!-- TOOLTIP -->
+<div id="sem-tooltip"></div>
+
+<!-- MODAL DE CARGA -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>📥 Carga de Datos Semanal</h2>
+    <p>Selecciona la semana y completa los valores para cada indicador y planta.</p>
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:8px">Semana a cargar</div>
+      <div class="week-grid" id="week-selector"></div>
+    </div>
+
+    <div class="modal-grid">
+      <div class="form-group">
+        <label>Responsable</label>
+        <select id="m-responsable" onchange="preloadModalValue()">
+          <option>FRANCISCO CASAS-CORDERO</option>
+          <option>SEBASTIAN YOUNG</option>
+          <option>JAVIERA ROMERO</option>
+          <option>OSCAR TAPIA</option>
+          <option>ALEXIS NIETO</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Planta</label>
+        <select id="m-planta" onchange="preloadModalValue()">
+          <option>PRIMARIO</option>
+          <option>CHANCADO</option>
+          <option>MOLIENDA SAG</option>
+          <option>MOLIENDA CONVENCIONAL FLOTACION</option>
+          <option>FILTROS</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Indicador</label>
+        <select id="m-indicador" onchange="updateModalUnit();preloadModalValue()">
+          <option value="tarjetas_verdes">Nº Tarjetas Verdes Abiertas</option>
+          <option value="reportes_peligro">Nº Reportes de Peligro Abiertas</option>
+          <option value="acc_correctivas">Acciones correctivas de Inv. Abiertas</option>
+          <option value="pam">Nº PAM sin ejecutar</option>
+          <option value="acciones_rnp">Nº Acciones RDP Abiertas</option>
+          <option value="avisos_tp">Nº Avisos sin Tratar Prioridad P</option>
+          <option value="ot_pendientes">Nº OT Prioridad "P" Pendientes</option>
+          <option value="trabajo_futuro">Trabajo Futuro OTs en avisos M (HH) Prioridad P</option>
+          <option value="backlog">Backlog</option>
+          <option value="rep_criticos_sin_oc">Repuestos Críticos sin Stock y Sin OC (TRINEO ACTUAL)</option>
+          <option value="rep_criticos_con_oc">Repuestos Críticos sin Stock - Con OC (TRINEO ACTUAL)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Unidad</label>
+        <input type="text" id="m-unidad" value="ut." readonly style="background:#f5f9fa">
+      </div>
+      <div class="form-group">
+        <label>Frecuencia</label>
+        <select id="m-frecuencia">
+          <option>semanal</option>
+          <option>mensual</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Valor</label>
+        <input type="number" id="m-valor" placeholder="— dejar vacío para mostrar -" step="1">
+      </div>
+    </div>
+
+    <div class="modal-grid full" style="margin-top:10px">
+      <div class="form-group">
+        <label>Comentario <span style="font-weight:400;color:var(--muted)">(opcional — visible al pasar el cursor)</span></label>
+        <input type="text" id="m-comentario" placeholder="Ej: Se revisó con área, pendiente cierre OT 12345…" maxlength="200"
+               style="width:100%">
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" style="background:var(--red);margin-right:auto" onclick="deleteEntry()">🗑 Borrar registro</button>
+      <button class="btn-save" onclick="saveEntry()">💾 Guardar Registro</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA MODEL =====
+// Indicadores visibles en la imagen + semanas 1-20 con datos simulados basados en la planilla
+
+const PLANTAS = ['PRIMARIO','CHANCADO','MOLIENDA SAG','MOLIENDA CONVENCIONAL FLOTACION','FILTROS'];
+const RESPONSABLES = {
+  'PRIMARIO':'FRANCISCO CASAS-CORDERO',
+  'CHANCADO':'SEBASTIAN YOUNG',
+  'MOLIENDA SAG':'JAVIERA ROMERO',
+  'MOLIENDA CONVENCIONAL FLOTACION':'OSCAR TAPIA',
+  'FILTROS':'ALEXIS NIETO'
+};
+const INDICADORES = [
+  {key:'tarjetas_verdes',label:'Nº Tarjetas Verdes Abiertas',unit:'ut.',type:'ut'},
+  {key:'reportes_peligro',label:'Nº Reportes de Peligro Abiertas',unit:'ut.',type:'ut'},
+  {key:'acc_correctivas',label:'Acciones correctivas Inv. Abiertas',unit:'ut.',type:'ut'},
+  {key:'pam',label:'Nº PAM sin ejecutar',unit:'ut.',type:'ut'},
+  {key:'acciones_rnp',label:'Nº Acciones RDP Abiertas',unit:'ut.',type:'ut'},
+  {key:'avisos_tp',label:'Nº Avisos sin Tratar Prioridad P',unit:'ut.',type:'ut'},
+  {key:'ot_pendientes',label:'Nº OT Prioridad "P" Pendientes',unit:'ut.',type:'ut'},
+  {key:'trabajo_futuro',label:'Trabajo Futuro OTs (HH) Prioridad P',unit:'HHH',type:'hh'},
+  {key:'backlog',label:'Backlog',unit:'HHH',type:'hh'},
+  {key:'rep_criticos_sin_oc',label:'Repuestos Críticos sin Stock Sin OC',unit:'ut.',type:'ut'},
+  {key:'rep_criticos_con_oc',label:'Repuestos Críticos sin Stock Con OC',unit:'ut.',type:'ut'},
+];
+const UNIT_MAP = {};
+INDICADORES.forEach(i=>UNIT_MAP[i.key]=i.unit);
+
+// Seed datos semanas 1-20 basados en la planilla observada
+function seedData(){
+  const rows = [];
+  // ── Datos reales: S11→S20 (index 0 = S11, index 9 = S20) ──
+  const SEM_INICIO = 11;
+  const SEM_FIN    = 20;
+  const base = {
+    // ── Indicadores semáforo ── todos en cero salvo acc_correctivas (FILTROS S18,S19,S20)
+    tarjetas_verdes:{
+      PRIMARIO:                          [0,0,0,0,0,0,0,0,0,0],
+      CHANCADO:                          [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA SAG':                    [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA CONVENCIONAL FLOTACION': [0,0,0,0,0,0,0,0,0,0],
+      FILTROS:                           [0,0,0,0,0,0,0,0,0,0],
+    },
+    reportes_peligro:{
+      PRIMARIO:                          [0,0,0,0,0,0,0,0,0,0],
+      CHANCADO:                          [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA SAG':                    [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA CONVENCIONAL FLOTACION': [0,0,0,0,0,0,0,0,0,0],
+      FILTROS:                           [0,0,0,0,0,0,0,0,0,0],
+    },
+    acc_correctivas:{
+      // S11–S17=0, S18=1, S19=1, S20=1  → índices 7,8,9
+      PRIMARIO:                          [0,0,0,0,0,0,0,0,0,0],
+      CHANCADO:                          [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA SAG':                    [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA CONVENCIONAL FLOTACION': [0,0,0,0,0,0,0,0,0,0],
+      FILTROS:                           [0,0,0,0,0,0,0,1,1,1],
+    },
+    pam:{
+      PRIMARIO:                          [0,0,0,0,0,0,0,0,0,0],
+      CHANCADO:                          [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA SAG':                    [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA CONVENCIONAL FLOTACION': [0,0,0,0,0,0,0,0,0,0],
+      FILTROS:                           [0,0,0,0,0,0,0,0,0,0],
+    },
+    acciones_rnp:{
+      PRIMARIO:                          [0,0,0,0,0,0,0,0,0,0],
+      CHANCADO:                          [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA SAG':                    [0,0,0,0,0,0,0,0,0,0],
+      'MOLIENDA CONVENCIONAL FLOTACION': [0,0,0,0,0,0,0,0,0,0],
+      FILTROS:                           [0,0,0,0,0,0,0,0,0,0],
+    },
+    // ── Avisos sin Tratar Prioridad P ──
+    // Foto: S11=3,S12=0,S13=20,S14=12,S15=9,S16=10,S17=6,S18=4,S19=1,S20=1  (PRIMARIO)
+    avisos_tp:{
+      PRIMARIO:                          [3, 0,20,12, 9,10, 6, 4, 1, 1],
+      CHANCADO:                          [0, 0,15, 6, 6, 4, 4, 4, 0, 0],
+      'MOLIENDA SAG':                    [0, 0, 0, 0, 2, 3, 6, 0, 0, 0],
+      'MOLIENDA CONVENCIONAL FLOTACION': [0, 0, 0, 0, 0, 0, 2, 0, 1, 1],
+      FILTROS:                           [0, 0, 0, 0, 3, 4, 2, 0, 0, 0],
+    },
+    // ── OT Prioridad P Pendientes ──
+    ot_pendientes:{
+      PRIMARIO:                          [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      CHANCADO:                          [0, 0,10, 0, 3, 0, 0, 0, 0, 0],
+      'MOLIENDA SAG':                    [0, 0, 0, 2, 0, 0, 0, 0, 0, 0],
+      'MOLIENDA CONVENCIONAL FLOTACION': [18,18, 0, 1, 0, 0, 0, 0, 0, 0],
+      FILTROS:                           [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    },
+    // ── Trabajo Futuro (HH) ──
+    trabajo_futuro:{
+      PRIMARIO:                          [1324,1324,1324,1324,1324,1324, 184, 234, 234, 234],
+      CHANCADO:                          [   0,   0,  10,   0,1467,2356,3045,3845,4902,6569],
+      'MOLIENDA SAG':                    [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
+      'MOLIENDA CONVENCIONAL FLOTACION': [   0,   0,1240,1240,1240,1240,1240, 225, 225, 225],
+      FILTROS:                           [   0,   0,   0,   0,   0,   0,   0,   0,   0,   0],
+    },
+    // ── Backlog (HH) ──
+    backlog:{
+      PRIMARIO:                          [100,100,100,100,100,100, 22,145,145,145],
+      CHANCADO:                          [  0,  0,125,125,125,125,125,169,207,106],
+      'MOLIENDA SAG':                    [  0,  0, 10, 10, 10, 10, 16,156,156,156],
+      'MOLIENDA CONVENCIONAL FLOTACION': [  0,  0,  2,  2,  2,2981,3082,325,325,325],
+      FILTROS:                           [150,150,150,150,150,150,150,150,150,150],
+    },
+    // ── Repuestos Críticos sin Stock y Sin OC ──
+    rep_criticos_sin_oc:{
+      PRIMARIO:                          [0,0,0,0,0,0,0,0,5,5],
+      CHANCADO:                          [0,0,0,0,0,0,0,1,1,1],
+      'MOLIENDA SAG':                    [0,0,13,17,17,10,10,5,5,5],
+      'MOLIENDA CONVENCIONAL FLOTACION': [0,0,0,2,2,2,2,2,4,1],
+      FILTROS:                           [0,0,0,0,0,0,0,7,7,6],
+    },
+    // ── Repuestos Críticos sin Stock Con OC ──
+    rep_criticos_con_oc:{
+      PRIMARIO:                          [10,10,10,10,10, 0, 6, 0, 6, 0],
+      CHANCADO:                          [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      'MOLIENDA SAG':                    [ 0, 0,23, 0, 0, 0, 7, 7, 0, 0],
+      'MOLIENDA CONVENCIONAL FLOTACION': [ 0, 0, 0, 4, 4, 4, 4, 4, 4, 4],
+      FILTROS:                           [ 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    },
+  };
+
+  const frecuencias = {PRIMARIO:'semanal',CHANCADO:'semanal','MOLIENDA SAG':'semanal','MOLIENDA CONVENCIONAL FLOTACION':'semanal',FILTROS:'semanal'};
+
+  for(let sem=SEM_INICIO; sem<=SEM_FIN; sem++){
+    const idx = sem - SEM_INICIO;
+    PLANTAS.forEach(planta=>{
+      INDICADORES.forEach(ind=>{
+        const val = (base[ind.key][planta][idx]) ?? 0;
+        rows.push({
+          semana:sem, responsable:RESPONSABLES[planta], planta,
+          indicador:ind.key, indicadorLabel:ind.label,
+          unidad:ind.unit, frecuencia:frecuencias[planta],
+          valor:val, _seed:true
+        });
+      });
+    });
+  }
+  return rows;
+}
+
+let allData = seedData();
+let filteredData = [...allData];
+let selectedWeekModal = 21;
+let charts = {};
+
+// ===== INIT FILTERS =====
+const SEM_DATOS_INICIO = 11;   // primera semana con datos reales
+let SEM_DATOS_FIN      = 20;   // última semana con datos — se actualiza dinámicamente
+
+function initFilters(){
+  const resps  = [...new Set(allData.map(d=>d.responsable))].sort();
+  const plantas = [...new Set(allData.map(d=>d.planta))].sort();
+
+  const fR = document.getElementById('f-responsable');
+  resps.forEach(r=>fR.add(new Option(r,r)));
+
+  const fP = document.getElementById('f-planta');
+  plantas.forEach(p=>fP.add(new Option(p,p)));
+
+  const fI = document.getElementById('f-indicador');
+  INDICADORES.forEach(i=>fI.add(new Option(i.label,i.key)));
+
+  const fSD = document.getElementById('f-sem-desde');
+  const fSH = document.getElementById('f-sem-hasta');
+  fSD.innerHTML=''; fSH.innerHTML='';
+  for(let s=1;s<=52;s++){
+    fSD.add(new Option(`S${s}`,s));
+    fSH.add(new Option(`S${s}`,s));
+  }
+  // Arrancar con el rango real de datos: S11→S20
+  fSD.value = SEM_DATOS_INICIO;
+  fSH.value = SEM_DATOS_FIN;
+}
+
+function applyFilters(){
+  const r=document.getElementById('f-responsable').value;
+  const p=document.getElementById('f-planta').value;
+  const i=document.getElementById('f-indicador').value;
+  const sd=+document.getElementById('f-sem-desde').value;
+  const sh=+document.getElementById('f-sem-hasta').value;
+
+  filteredData=allData.filter(d=>
+    (!r||d.responsable===r)&&
+    (!p||d.planta===p)&&
+    (!i||d.indicador===i)&&
+    d.semana>=sd&&d.semana<=sh
+  );
+  updateAll();
+}
+
+function resetFilters(){
+  document.getElementById('f-responsable').value='';
+  document.getElementById('f-planta').value='';
+  document.getElementById('f-indicador').value='';
+  document.getElementById('f-sem-desde').value=SEM_DATOS_INICIO;
+  document.getElementById('f-sem-hasta').value=SEM_DATOS_FIN;
+  filteredData=[...allData];
+  updateAll();
+}
+
+// ===== KPIs =====
+function updateKPIs(){
+  const total  = filteredData.length;
+  const plantas= new Set(filteredData.map(d=>d.planta)).size;
+  const semanas= new Set(filteredData.map(d=>d.semana)).size;
+  const resp   = new Set(filteredData.map(d=>d.responsable)).size;
+  const inds   = new Set(filteredData.map(d=>d.indicador)).size;
+
+  document.getElementById('k-total').textContent   = total.toLocaleString('es-CL');
+  document.getElementById('k-plantas').textContent = plantas;
+  document.getElementById('k-semanas').textContent = `S${SEM_DATOS_INICIO} → S${SEM_DATOS_FIN}`;
+  document.getElementById('k-resp').textContent    = resp;
+  document.getElementById('k-ind').textContent     = inds;
+  document.getElementById('k-progress').style.width= `${(SEM_DATOS_FIN/52*100).toFixed(0)}%`;
+  document.getElementById('hdr-semana').textContent= `S${SEM_DATOS_FIN}`;
+  document.getElementById('hdr-avance').textContent= `${(SEM_DATOS_FIN/52*100).toFixed(0)}%`;
+}
+
+// ===== CHART COLORS =====
+const PALETTE_PLANTS = {
+  'PRIMARIO':'#0098AA',
+  'CHANCADO':'#E55302',
+  'MOLIENDA SAG':'#FFAA00',
+  'MOLIENDA CONVENCIONAL FLOTACION':'#2E7D32',
+  'FILTROS':'#7B1FA2'
+};
+const PALETTES = Object.values(PALETTE_PLANTS);
+
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id]}}
+
+// ===== HELPERS =====
+// Devuelve el máximo semana con dato en allData
+function getMaxSemDatos(){
+  // Recalcula la semana actual desde allData cada vez que se llama
+  const max = allData.length ? Math.max(...allData.map(d=>d.semana)) : SEM_DATOS_INICIO;
+  SEM_DATOS_FIN = max;  // actualiza la variable global
+  return SEM_DATOS_FIN;
+}
+
+// Genera array de 52 valores para gráficos de línea
+// null  → semana sin dato (antes de S11 o después de S20): no dibuja punto ni línea
+// valor → semana con dato real (S11→S20)
+function buildSerie52(planta, indKey){
+  return LABELS_YEAR.map((_,i)=>{
+    const s = i + SEM_AXIS_INICIO;
+    const row = allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===s);
+    if(row !== undefined) return row.valor;
+    return s <= SEM_DATOS_FIN ? 0 : null;
+  });
+}
+
+// Plugin para sombrear zona futura en gráficos de línea
+function futureZonePlugin(maxDato){
+  return {
+    id:'futureZone',
+    beforeDraw(chart){
+      const {ctx,chartArea,scales} = chart;
+      if(!chartArea||!scales.x) return;
+      // index en el eje = (maxDato - SEM_AXIS_INICIO) = posición de la última semana con dato
+      const futureIdx = maxDato - SEM_AXIS_INICIO + 1;
+      const xStart = scales.x.getPixelForValue(futureIdx);
+      const xEnd = chartArea.right;
+      if(xStart >= xEnd) return;
+      ctx.save();
+      ctx.fillStyle = 'rgba(200,215,220,0.18)';
+      ctx.fillRect(xStart, chartArea.top, xEnd - xStart, chartArea.bottom - chartArea.top);
+      // Línea divisoria
+      ctx.strokeStyle = 'rgba(100,113,122,0.35)';
+      ctx.setLineDash([5,4]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(xStart, chartArea.top);
+      ctx.lineTo(xStart, chartArea.bottom);
+      ctx.stroke();
+      // Etiqueta
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(100,113,122,0.6)';
+      ctx.font = '10px Segoe UI';
+      ctx.fillText('← datos  |  pendiente →', xStart - 60, chartArea.top + 14);
+      ctx.restore();
+    }
+  };
+}
+
+// Eje temporal: S11 → S52  (42 semanas visibles — el año empieza en S11)
+const SEM_AXIS_INICIO = 11;
+const SEM_AXIS_FIN    = 52;
+const LABELS_YEAR = Array.from({length: SEM_AXIS_FIN - SEM_AXIS_INICIO + 1}, (_,i)=>`S${i + SEM_AXIS_INICIO}`);
+
+// ===== SEMÁFORO TABLES =====
+const SEMAFORO_INDS = [
+  {key:'tarjetas_verdes',   label:'Nº Tarjetas Verdes Abiertas',           umbralAmbar:1, umbralRojo:4},
+  {key:'reportes_peligro',  label:'Nº Reportes de Peligro Abiertas',       umbralAmbar:1, umbralRojo:4},
+  {key:'acc_correctivas',   label:'Acciones Correctivas de Inv. Abiertas', umbralAmbar:1, umbralRojo:3},
+  {key:'pam',               label:'Nº PAM sin Ejecutar',                   umbralAmbar:1, umbralRojo:3},
+  {key:'acciones_rnp',      label:'Nº Acciones RDP Abiertas',              umbralAmbar:1, umbralRojo:4},
+];
+
+// Estado de visibilidad por indicador — persiste entre renders
+const semVisible = {};
+SEMAFORO_INDS.forEach(i => semVisible[i.key] = true);
+
+function semColor(val, future, ua, ur){
+  if(future) return 'c-future';
+  if(val === 0) return 'c-green';
+  if(val < ur)  return 'c-amber';
+  return 'c-red';
+}
+
+function toggleSem(key){
+  semVisible[key] = !semVisible[key];
+  const body = document.getElementById('sem-body-'+key);
+  const btn  = document.getElementById('sem-btn-'+key);
+  if(body && btn){
+    body.style.display = semVisible[key] ? '' : 'none';
+    btn.textContent    = semVisible[key] ? '▲ Ocultar' : '▼ Mostrar';
+    btn.style.background = semVisible[key] ? 'rgba(255,255,255,.15)' : 'rgba(255,255,255,.05)';
+  }
+}
+
+function buildSemaforoTables(){
+  const SEM_DATOS_FIN = getMaxSemDatos();
+  const tooltip  = document.getElementById('sem-tooltip');
+
+  // ── Leer filtros activos ──
+  const fPlanta = document.getElementById('f-planta').value;
+  const fResp   = document.getElementById('f-responsable').value;
+
+  // Plantas a mostrar según filtro (respetando orden original)
+  let plantasFiltradas = PLANTAS.filter(p => {
+    if(fPlanta && p !== fPlanta) return false;
+    if(fResp   && RESPONSABLES[p] !== fResp) return false;
+    return true;
+  });
+
+  // Si no hay ninguna por filtro vacío raro, mostrar todas
+  if(plantasFiltradas.length === 0) plantasFiltradas = [...PLANTAS];
+
+  const esFiltrado   = plantasFiltradas.length < PLANTAS.length;
+  const mostrarTotal = plantasFiltradas.length > 1;
+
+  let html = '';
+
+  SEMAFORO_INDS.forEach(ind => {
+    // Resumen usando solo las plantas visibles
+    const totalActual = plantasFiltradas.reduce((acc,p)=>{
+      const row = allData.find(d=>d.planta===p&&d.indicador===ind.key&&d.semana===SEM_DATOS_FIN);
+      return acc + (row ? row.valor : 0);
+    }, 0);
+    const activos = plantasFiltradas.filter(p=>{
+      const row = allData.find(d=>d.planta===p&&d.indicador===ind.key&&d.semana===SEM_DATOS_FIN);
+      return row && row.valor > 0;
+    }).length;
+
+    const estadoGlobal = totalActual === 0 ? '🟢 Todo OK' : '🔴 Con pendientes';
+    const visible = semVisible[ind.key];
+
+    // Etiqueta de contexto en el header
+    const contexto = esFiltrado
+      ? `<span class="ind-badge" style="background:rgba(229,83,2,.35)">🔎 ${plantasFiltradas.map(p=>p.substring(0,8)).join(', ')}</span>`
+      : '';
+
+    html += `<div class="sem-block">`;
+
+    // ── Header ──
+    html += `<div class="sem-block-hdr" style="cursor:pointer" onclick="toggleSem('${ind.key}')">
+      <span style="font-size:.85rem">📋</span>
+      <span style="flex:1">${ind.label}</span>
+      ${contexto}
+      <span class="ind-badge">${estadoGlobal}</span>
+      <span class="ind-badge">S${SEM_DATOS_FIN}: <strong>${totalActual}</strong></span>
+      <span class="ind-badge" style="font-size:.6rem;opacity:.75">🟡≥${ind.umbralAmbar} · 🔴≥${ind.umbralRojo}</span>
+      <button id="sem-btn-${ind.key}"
+        onclick="event.stopPropagation();toggleSem('${ind.key}')"
+        style="border:none;border-radius:6px;padding:4px 12px;font-size:.72rem;font-weight:700;
+               cursor:pointer;color:#fff;margin-left:8px;transition:all .2s;
+               background:${visible?'rgba(255,255,255,.15)':'rgba(255,255,255,.05)'}">
+        ${visible?'▲ Ocultar':'▼ Mostrar'}
+      </button>
+    </div>`;
+
+    // ── Cuerpo colapsable ──
+    html += `<div id="sem-body-${ind.key}" class="sem-scroll" style="display:${visible?'':'none'}">`;
+    html += `<table class="sem-table"><thead><tr>`;
+    html += `<th class="area-col">Área / Planta</th>`;
+    for(let s=SEM_DATOS_INICIO;s<=52;s++){
+      const cls = s > SEM_DATOS_FIN ? 'future' : s === SEM_DATOS_FIN ? 'current' : '';
+      html += `<th class="sem-hdr ${cls}">${s}</th>`;
+    }
+    html += `<th style="min-width:42px;color:var(--navy);font-size:.65rem;text-align:center">∑</th>`;
+    html += `</tr></thead><tbody>`;
+
+    const colTotals  = Array(52 - SEM_DATOS_INICIO + 1).fill(0);
+    const colHasReal = Array(52 - SEM_DATOS_INICIO + 1).fill(false);
+    let grandTotal   = 0;
+    let grandHasReal = false;
+
+    // Solo filas de plantas filtradas
+    plantasFiltradas.forEach(p => {
+      const resp = RESPONSABLES[p];
+      html += `<tr>`;
+      html += `<td class="sem-area-label">
+        <span style="background:${PALETTE_PLANTS[p]}"></span>
+        ${p.length > 24 ? p.substring(0,23)+'…' : p}
+        <br><span style="font-size:.59rem;color:var(--muted);font-weight:400">${resp.split(' ')[0]}</span>
+      </td>`;
+
+      let rowTotal = 0;
+      let hasRealData = false;
+      for(let s=SEM_DATOS_INICIO;s<=52;s++){
+        const future    = s > SEM_DATOS_FIN;
+        const manualRow = allData.find(d=>d.planta===p&&d.indicador===ind.key&&d.semana===s&&d._manual);
+        const seedRow   = allData.find(d=>d.planta===p&&d.indicador===ind.key&&d.semana===s&&d._seed);
+        const activeRow = manualRow || (!future ? seedRow : null);
+
+        let cls, disp, cellVal = 0, countInTotal = false;
+
+        if(manualRow && manualRow.valor === null){
+          // Usuario guardó vacío → guión gris
+          cls = 'c-future'; disp = '-';
+        } else if(future && !manualRow){
+          // Semana futura sin dato → guión gris
+          cls = 'c-future'; disp = '-';
+        } else if(!activeRow){
+          // Semana pasada sin dato → vacía
+          cls = 'c-empty'; disp = '';
+        } else {
+          // Dato real (manual o seed con valor > 0)
+          cellVal = activeRow.valor || 0;
+          cls = semColor(cellVal, false, ind.umbralAmbar, ind.umbralRojo);
+          disp = cellVal;
+          countInTotal = true;
+        }
+
+        const dtip = (activeRow && disp !== '-' && disp !== '') ? `data-tip="${ind.label}§§${p}§§S${s}§§${disp}§§${activeRow.comentario||''}"` : '';
+        if(countInTotal){ colTotals[s-SEM_DATOS_INICIO] += cellVal; rowTotal += cellVal; grandTotal += cellVal; hasRealData = true; grandHasReal = true; colHasReal[s-SEM_DATOS_INICIO] = true; }
+        html += `<td class="sem-cell ${cls}" ${dtip}
+          onmouseenter="showTip(event,this)" onmouseleave="hideTip()">${disp}</td>`;
+      }
+
+      const rowColor = !hasRealData ? 'var(--muted)' : rowTotal > 0 ? 'var(--red)' : 'var(--green)';
+      const rowDisp  = !hasRealData ? '-' : rowTotal;
+      html += `<td style="text-align:center;font-weight:800;font-size:.74rem;
+                color:${rowColor};border-left:2px solid var(--line)">${rowDisp}</td>`;
+      html += `</tr>`;
+    });
+
+    // Fila TOTAL solo si hay más de una planta visible
+    if(mostrarTotal){
+      html += `<tr class="sem-total-row">`;
+      html += `<td class="sem-area-label" style="font-weight:800;font-size:.72rem">TOTAL DIVISIÓN</td>`;
+      for(let s=SEM_DATOS_INICIO;s<=52;s++){
+        const future = s > SEM_DATOS_FIN;
+        const t   = colTotals[s-SEM_DATOS_INICIO];
+        const noData = !colHasReal[s-SEM_DATOS_INICIO];
+        const cls = (future || noData) ? 'c-future' : semColor(t, false, ind.umbralAmbar * plantasFiltradas.length, ind.umbralRojo * plantasFiltradas.length);
+        html += `<td class="sem-cell ${cls}" style="font-size:.62rem">${(future||noData)?'-':t}</td>`;
+      }
+      const gcColor = !grandHasReal ? 'var(--muted)' : grandTotal > 0 ? 'var(--red)' : 'var(--green)';
+      const gcDisp  = !grandHasReal ? '-' : grandTotal;
+      html += `<td style="text-align:center;font-weight:800;font-size:.74rem;
+                color:${gcColor};border-left:2px solid var(--line)">${gcDisp}</td>`;
+      html += `</tr>`;
+    }
+
+    html += `</tbody></table></div></div>`;
+  });
+
+  document.getElementById('semaforo-tables').innerHTML = html;
+
+  // ── Tooltip ──
+  window.showTip = function(e, el){
+    const parts = (el.dataset.tip||'').split('§§');
+    if(!parts[0]) return;
+    const [label, planta, sem, val, comentario] = parts;
+    const v = +val;
+    const color = v === 0 ? '#2E7D32' : v < 4 ? '#FFAA00' : '#C13832';
+    tooltip.innerHTML = `
+      <div style="font-size:.65rem;opacity:.7;margin-bottom:2px">${sem} · ${planta.substring(0,22)}</div>
+      <div style="font-size:.68rem;margin-bottom:4px">${label.substring(0,38)}</div>
+      <div style="font-size:1.4rem;font-weight:800;color:${color}">${val}</div>
+      <div style="font-size:.6rem;opacity:.6">${v===0?'Sin pendientes':v<4?'Atención':'Crítico'}</div>
+      ${comentario ? `<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.2);
+        font-size:.68rem;font-style:italic;color:rgba(255,255,255,.85)">💬 ${comentario}</div>` : ''}`;
+    tooltip.style.display = 'block';
+    moveTip(e);
+  };
+  window.hideTip = function(){ tooltip.style.display='none'; };
+
+  if(!window._tipMoveAttached){
+    document.addEventListener('mousemove', e=>{
+      if(document.getElementById('sem-tooltip').style.display==='block') moveTip(e);
+    });
+    window._tipMoveAttached = true;
+  }
+}
+function moveTip(e){
+  const tt = document.getElementById('sem-tooltip');
+  const x = e.clientX + 12, y = e.clientY - 10;
+  tt.style.left = (x + tt.offsetWidth > window.innerWidth ? x - tt.offsetWidth - 20 : x) + 'px';
+  tt.style.top  = (y + tt.offsetHeight > window.innerHeight ? y - tt.offsetHeight - 10 : y) + 'px';
+}
+
+// ===== AVISOS SIN TRATAR PRIORIDAD P — GRÁFICOS DE LÍNEA =====
+
+function getAvisosTPVal(planta, semana){
+  if(semana < SEM_DATOS_INICIO) return null;
+  const manualRow = allData.find(d=>d.planta===planta&&d.indicador==='avisos_tp'&&d.semana===semana&&d._manual);
+  const seedRow   = allData.find(d=>d.planta===planta&&d.indicador==='avisos_tp'&&d.semana===semana&&d._seed);
+  const row       = manualRow || seedRow;
+  if(!row) return semana <= SEM_DATOS_FIN ? 0 : null;
+  if(row.valor === null) return null;
+  return row.valor;
+}
+
+function avisosLineOpts(){
+  return {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode:'index', intersect:false },
+    plugins:{
+      legend:{ position:'bottom', labels:{ font:{size:10}, boxWidth:10, padding:8 }},
+      tooltip:{ callbacks:{
+        label: c => c.raw === null
+          ? `${c.dataset.label}: pendiente`
+          : `${c.dataset.label}: ${c.raw.toLocaleString('es-CL')}`,
+        afterBody: (items) => {
+          const lines = [];
+          items.forEach(item => {
+            const coments = item.dataset.comentarios;
+            if(coments && coments[item.dataIndex]) lines.push(`💬 ${coments[item.dataIndex]}`);
+          });
+          return lines.length ? lines : [];
+        }
+      }}
+    },
+    scales:{
+      y:{ beginAtZero:true, grid:{color:'#e8f0f3'},
+          ticks:{font:{size:10}, callback: v => v>=1000?`${(v/1000).toFixed(1)}k`:v }},
+      x:{ grid:{display:false},
+          ticks:{font:{size:9}, maxTicksLimit:14,
+                 callback:(v,i)=> i%4===0 ? LABELS_YEAR[i] : '' }}
+    }
+  };
+}
+
+function updateChartAvisos(){
+  destroyChart('avisos-left');
+  destroyChart('avisos-right');
+
+  const SEM_DATOS_FIN  = getMaxSemDatos();
+  const fPlanta   = document.getElementById('f-planta').value;
+  const fResp     = document.getElementById('f-responsable').value;
+  const ctxL      = document.getElementById('chart-avisos-left').getContext('2d');
+  const ctxR      = document.getElementById('chart-avisos-right').getContext('2d');
+  const rightCard = document.getElementById('avisos-right-card');
+  const titleL    = document.getElementById('avisos-left-title');
+  const titleR    = document.getElementById('avisos-right-title');
+  const grid      = document.getElementById('avisos-grid');
+  const futPlugin = futureZonePlugin(SEM_DATOS_FIN);
+
+  // Planta activa según filtros
+  let plantaActiva = null;
+  if(fPlanta) plantaActiva = fPlanta;
+  else if(fResp) plantaActiva = Object.keys(RESPONSABLES).find(p=>RESPONSABLES[p]===fResp)||null;
+
+  // ── MODO FILTRADO: una sola planta ──
+  if(plantaActiva){
+    rightCard.style.display = 'none';
+    grid.style.gridTemplateColumns = '1fr';
+
+    titleL.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;
+      background:${PALETTE_PLANTS[plantaActiva]};margin-right:4px;vertical-align:middle"></span>
+      Avisos sin Tratar Prioridad P &mdash; ${plantaActiva} &middot; S1→S52`;
+
+    // Siempre S1→S52 completo — zona gris automática desde futPlugin
+    charts['avisos-left'] = new Chart(ctxL, {
+      type:'line',
+      data:{
+        labels: LABELS_YEAR,
+        datasets:[{
+          label: plantaActiva.length>24 ? plantaActiva.substring(0,23)+'…' : plantaActiva,
+          data: LABELS_YEAR.map((_,i)=> getAvisosTPVal(plantaActiva, i+SEM_AXIS_INICIO)),
+          comentarios: buildComentarios(plantaActiva, 'avisos_tp'),
+          borderColor: PALETTE_PLANTS[plantaActiva],
+          backgroundColor: PALETTE_PLANTS[plantaActiva]+'28',
+          borderWidth:2.5, tension:.35, fill:true, spanGaps:false,
+          pointRadius: 3.5,
+          pointHoverRadius: 5.5,
+          pointBackgroundColor: PALETTE_PLANTS[plantaActiva],
+        }]
+      },
+      options: avisosLineOpts(),
+      plugins: [futPlugin]
+    });
+
+  // ── MODO SIN FILTRO: todas las plantas ──
+  } else {
+    rightCard.style.display = '';
+    grid.style.gridTemplateColumns = '';
+
+    // IZQUIERDO: total división (suma de todas las plantas)
+    titleL.innerHTML = `<span></span> Avisos sin Tratar Prioridad P — Total GMAN · S1→S52`;
+    const serieTotal = LABELS_YEAR.map((_,i)=>{
+      const s = i + SEM_AXIS_INICIO;
+      const vals = PLANTAS.map(p=>getAvisosTPVal(p,s));
+      // Si todas son null (sin dato futuro cargado), retornar null
+      if(vals.every(v=>v===null)) return null;
+      return vals.reduce((acc,v)=>acc+(v||0),0);
+    });
+
+    charts['avisos-left'] = new Chart(ctxL, {
+      type:'line',
+      data:{
+        labels: LABELS_YEAR,
+        datasets:[{
+          label:'Total GMAN',
+          data: serieTotal,
+          comentarios: null,
+          borderColor:'#0098AA',
+          backgroundColor:'#0098AA28',
+          borderWidth:3, tension:.35, fill:true, spanGaps:false,
+          pointRadius: LABELS_YEAR.map((_,i)=> i <= (SEM_DATOS_FIN - SEM_AXIS_INICIO) ? 3.5 : 0),
+          pointBackgroundColor:'#0098AA',
+        }]
+      },
+      options: avisosLineOpts(),
+      plugins: [futPlugin]
+    });
+
+    // DERECHO: 5 líneas, una por planta
+    titleR.innerHTML = `<span class="orange"></span> Avisos sin Tratar Prioridad P — Por Planta · S1→S52`;
+    charts['avisos-right'] = new Chart(ctxR, {
+      type:'line',
+      data:{
+        labels: LABELS_YEAR,
+        datasets: PLANTAS.map(p=>({
+          label: p.length>22 ? p.substring(0,21)+'…' : p,
+          data: LABELS_YEAR.map((_,i)=> getAvisosTPVal(p, i+SEM_AXIS_INICIO)),
+          comentarios: buildComentarios(p, 'avisos_tp'),
+          borderColor: PALETTE_PLANTS[p],
+          backgroundColor: PALETTE_PLANTS[p]+'18',
+          borderWidth:2.5, tension:.35, fill:false, spanGaps:false,
+          pointRadius: LABELS_YEAR.map((_,i)=> i <= (SEM_DATOS_FIN - SEM_AXIS_INICIO) ? 3 : 0),
+          pointBackgroundColor: PALETTE_PLANTS[p],
+        }))
+      },
+      options: avisosLineOpts(),
+      plugins: [futPlugin]
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// GRÁFICOS DE LÍNEA GENÉRICOS — Total GMAN + Por Planta
+// ═══════════════════════════════════════════════════════════
+
+// Obtiene valor puntual — prioriza manual sobre seed, null si no hay dato real
+function getIndVal(planta, indKey, semana){
+  if(semana < SEM_DATOS_INICIO) return null;
+  const manualRow = allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===semana&&d._manual);
+  const seedRow   = allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===semana&&d._seed);
+  const row       = manualRow || seedRow;
+  if(!row) return semana <= SEM_DATOS_FIN ? 0 : null;  // sin dato: 0 en pasado, null en futuro
+  if(row.valor === null) return null;                   // guión explícito → null en gráfico
+  return row.valor;
+}
+
+// Opciones Chart.js comunes para todos los gráficos de línea
+function lineOpts(unidad, indKey){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    interaction:{mode:'index', intersect:false},
+    plugins:{
+      legend:{position:'bottom', labels:{font:{size:10}, boxWidth:10, padding:7}},
+      tooltip:{callbacks:{
+        label: c => {
+          if(c.raw===null) return `${c.dataset.label}: pendiente`;
+          return `${c.dataset.label}: ${c.raw.toLocaleString('es-CL')} ${unidad}`;
+        },
+        afterBody: (items) => {
+          const lines = [];
+          items.forEach(item => {
+            const coments = item.dataset.comentarios;
+            if(coments && coments[item.dataIndex]) lines.push(`💬 ${coments[item.dataIndex]}`);
+          });
+          return lines.length ? lines : [];
+        }
+      }}
+    },
+    scales:{
+      y:{beginAtZero:true, grid:{color:'#e8f0f3'},
+         ticks:{font:{size:10}, callback:v=>v>=1000?`${(v/1000).toFixed(1)}k`:v}},
+      x:{grid:{display:false},
+         ticks:{font:{size:9}, maxTicksLimit:14,
+                callback:(_,i)=> i%4===0 ? LABELS_YEAR[i] : ''}}
+    }
+  };
+}
+
+
+// Genera array de comentarios alineado con LABELS_YEAR — prioriza manual sobre seed
+function buildComentarios(planta, indKey){
+  return LABELS_YEAR.map((_,i)=>{
+    const s = i + SEM_AXIS_INICIO;
+    const row = allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===s&&d._manual)
+             || allData.find(d=>d.planta===planta&&d.indicador===indKey&&d.semana===s&&d._seed);
+    return (row && row.comentario) ? row.comentario : null;
+  });
+}
+
+/**
+ * Construye un par de gráficos de línea (total + por planta).
+ * @param {string} id       — sufijo para IDs: 'ot', 'tf', 'bl', 'rsnoc', 'rcoc'
+ * @param {string} indKey   — clave del indicador en allData
+ * @param {string} label    — nombre legible del indicador
+ * @param {string} unidad   — 'ut.' | 'HH'
+ * @param {string} colorLeft — color hex para la línea total
+ */
+function buildDualLineChart(id, indKey, label, unidad, colorLeft){
+  destroyChart(`${id}-left`);
+  destroyChart(`${id}-right`);
+
+  const fPlanta  = document.getElementById('f-planta').value;
+  const fResp    = document.getElementById('f-responsable').value;
+  const ctxL     = document.getElementById(`chart-${id}-left`).getContext('2d');
+  const ctxR     = document.getElementById(`chart-${id}-right`).getContext('2d');
+  const cardR    = document.getElementById(`card-${id}-right`);
+  const titleL   = document.getElementById(`title-${id}-left`);
+  const titleR   = document.getElementById(`title-${id}-right`);
+  const grid     = document.getElementById(`grid-${id}`);
+  const futPlugin= futureZonePlugin(SEM_DATOS_FIN);
+
+  // Planta activa según filtros
+  let plantaActiva = null;
+  if(fPlanta) plantaActiva = fPlanta;
+  else if(fResp) plantaActiva = Object.keys(RESPONSABLES).find(p=>RESPONSABLES[p]===fResp)||null;
+
+  const dotIdx = SEM_DATOS_FIN - SEM_AXIS_INICIO; // último índice con dato
+
+  // ── MODO FILTRADO: planta única ──────────────────────────────
+  if(plantaActiva){
+    cardR.style.display = 'none';
+    grid.style.gridTemplateColumns = '1fr';
+
+    titleL.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;
+      background:${PALETTE_PLANTS[plantaActiva]};margin-right:5px;vertical-align:middle"></span>
+      ${label} &mdash; ${plantaActiva} &middot; S${SEM_DATOS_INICIO}→S52`;
+
+    charts[`${id}-left`] = new Chart(ctxL,{
+      type:'line',
+      data:{
+        labels: LABELS_YEAR,
+        datasets:[{
+          label: plantaActiva.length>24?plantaActiva.substring(0,23)+'…':plantaActiva,
+          data: LABELS_YEAR.map((_,i)=>getIndVal(plantaActiva, indKey, i+SEM_AXIS_INICIO)),
+          comentarios: buildComentarios(plantaActiva, indKey),
+          borderColor: PALETTE_PLANTS[plantaActiva],
+          backgroundColor: PALETTE_PLANTS[plantaActiva]+'28',
+          borderWidth:2.5, tension:.35, fill:true, spanGaps:false,
+          pointRadius: 3.5,
+          pointHoverRadius: 5.5,
+          pointBackgroundColor: PALETTE_PLANTS[plantaActiva],
+        }]
+      },
+      options: lineOpts(unidad),
+      plugins:[futPlugin]
+    });
+
+  // ── MODO SIN FILTRO: total + 5 líneas ────────────────────────
+  } else {
+    cardR.style.display = '';
+    grid.style.gridTemplateColumns = '';
+
+    // IZQUIERDO — total división
+    titleL.innerHTML = `<span></span> ${label} — Total GMAN &middot; S${SEM_DATOS_INICIO}→S52`;
+    const serieTotal = LABELS_YEAR.map((_,i)=>{
+      const s = i + SEM_AXIS_INICIO;
+      const vals = PLANTAS.map(p=>getIndVal(p,indKey,s));
+      if(vals.every(v=>v===null)) return null;
+      return vals.reduce((acc,v)=>acc+(v||0),0);
+    });
+
+    charts[`${id}-left`] = new Chart(ctxL,{
+      type:'line',
+      data:{
+        labels: LABELS_YEAR,
+        datasets:[{
+          label:'Total GMAN',
+          data: serieTotal,
+          comentarios: null,
+          borderColor: colorLeft,
+          backgroundColor: colorLeft+'28',
+          borderWidth:3, tension:.35, fill:true, spanGaps:false,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: colorLeft,
+        }]
+      },
+      options: lineOpts(unidad, indKey),
+      plugins:[futPlugin]
+    });
+
+    // DERECHO — 5 líneas por planta
+    titleR.innerHTML = `<span class="orange"></span> ${label} — Por Planta &middot; S${SEM_DATOS_INICIO}→S52`;
+    charts[`${id}-right`] = new Chart(ctxR,{
+      type:'line',
+      data:{
+        labels: LABELS_YEAR,
+        datasets: PLANTAS.map(p=>({
+          label: p.length>22?p.substring(0,21)+'…':p,
+          data: LABELS_YEAR.map((_,i)=>getIndVal(p,indKey,i+SEM_AXIS_INICIO)),
+          comentarios: buildComentarios(p, indKey),
+          borderColor: PALETTE_PLANTS[p],
+          backgroundColor: PALETTE_PLANTS[p]+'18',
+          borderWidth:2.5, tension:.35, fill:false, spanGaps:false,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: PALETTE_PLANTS[p],
+        }))
+      },
+      options: lineOpts(unidad, indKey),
+      plugins:[futPlugin]
+    });
+  }
+}
+
+// ── Las 5 secciones ──────────────────────────────────────────
+function updateChartOT(){
+  buildDualLineChart('ot','ot_pendientes','OT Prioridad P Pendientes','ut.','#36424A');
+}
+function updateChartTF(){
+  buildDualLineChart('tf','trabajo_futuro','Trabajo Futuro OTs (HH) Prioridad P','HH','#E55302');
+}
+function updateChartBL(){
+  buildDualLineChart('bl','backlog','Backlog','HH','#FFAA00');
+}
+function updateChartRSNOC(){
+  buildDualLineChart('rsnoc','rep_criticos_sin_oc','Repuestos Críticos sin Stock Sin OC','ut.','#C13832');
+}
+function updateChartRCOC(){
+  buildDualLineChart('rcoc','rep_criticos_con_oc','Repuestos Críticos sin Stock Con OC','ut.','#2E7D32');
+}
+
+// ===== TOGGLE RANKING TABLE =====
+let rankingTableVisible = true;
+function toggleRankingTable(){
+  rankingTableVisible = !rankingTableVisible;
+  const wrap = document.getElementById('ranking-table-wrap');
+  const btn  = document.getElementById('btn-ranking-table');
+  if(wrap){ wrap.style.display = rankingTableVisible ? '' : 'none'; }
+  if(btn){
+    btn.textContent = rankingTableVisible ? '▲ Ocultar' : '▼ Mostrar';
+    btn.style.background = rankingTableVisible ? 'var(--codelco)' : 'var(--muted)';
+  }
+}
+
+// ===== RANKING DE DESEMPEÑO =====
+const RANKING_INDS = [
+  {key:'tarjetas_verdes',   col:'TV'},
+  {key:'reportes_peligro',  col:'RP'},
+  {key:'acc_correctivas',   col:'AC'},
+  {key:'pam',               col:'PAM'},
+  {key:'acciones_rnp',      col:'RDP'},
+  {key:'avisos_tp',         col:'AV'},
+  {key:'ot_pendientes',     col:'OT'},
+  {key:'backlog',           col:'BL'},
+  {key:'rep_criticos_sin_oc',col:'R-OC'},
+  {key:'rep_criticos_con_oc',col:'R+OC'},
+];
+
+const PODIO_MEDALS  = ['🥇','🥈','🥉','4°','5°'];
+const PODIO_HEIGHTS = [160,140,120,100,90];
+
+function estadoPlanta(total){
+  if(total===0)  return {label:'Excelente 🟢',bg:'#e8f5e9',color:'#2E7D32'};
+  if(total<=5)   return {label:'Bueno 🟡',    bg:'#fff8e1',color:'#f57f17'};
+  if(total<=15)  return {label:'Regular 🟠',  bg:'#fff3e0',color:'#e65100'};
+  return                {label:'Crítico 🔴',  bg:'#fde8e8',color:'#C13832'};
+}
+function cellClass(v){
+  if(v===0) return 'zero';
+  if(v<=3)  return 'warn';
+  return 'bad';
+}
+
+// Calcula scores acumulados — solo entradas con valor real (excluye null/guión)
+function calcScores(){
+  return PLANTAS.map(planta=>{
+    const vals={};
+    let total=0;
+    RANKING_INDS.forEach(ind=>{
+      const suma = allData
+        .filter(d=>d.planta===planta && d.indicador===ind.key &&
+                   d.semana<=SEM_DATOS_FIN && d.valor !== null && d.valor !== undefined)
+        .reduce((acc,d)=>acc+(d.valor||0), 0);
+      vals[ind.key]=suma;
+      total+=suma;
+    });
+    return {planta, resp:RESPONSABLES[planta], vals, total};
+  }).sort((a,b)=>a.total-b.total).map((s,i,arr)=>{
+    s.pos = i>0&&s.total===arr[i-1].total ? arr[i-1].pos : i+1;
+    return s;
+  });
+}
+
+function buildRanking(){
+  const scores = calcScores();
+
+  // ── Podio ──
+  const podioHTML = scores.map((s,i)=>{
+    const color=PALETTE_PLANTS[s.planta];
+    const h=PODIO_HEIGHTS[i]||80;
+    const best=i===0;
+    return `<div class="podio-card" style="background:${color};min-height:${h}px;
+        ${best?'transform:scale(1.06);box-shadow:0 10px 30px rgba(0,0,0,.2)':''}">
+      <div class="podio-medal">${PODIO_MEDALS[i]}</div>
+      <div class="podio-pos" style="color:rgba(255,255,255,.9)">${s.pos}</div>
+      <div class="podio-planta">${s.planta.length>20?s.planta.substring(0,19)+'…':s.planta}</div>
+      <div class="podio-resp">${s.resp.split(' ')[0]}</div>
+      <div class="podio-score">Σ ${s.total.toLocaleString('es-CL')}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('ranking-podio').innerHTML=podioHTML;
+
+  // ── Tabla ──
+  const tbodyHTML=scores.map((s,i)=>{
+    const color=PALETTE_PLANTS[s.planta];
+    const est=estadoPlanta(s.total);
+    const posBadge=`<span class="rank-pos" style="background:${color}">${s.pos}</span>`;
+    const indCells=RANKING_INDS.map(ind=>{
+      const v=s.vals[ind.key];
+      return `<td class="rank-cell ${cellClass(v)}">${v.toLocaleString('es-CL')}</td>`;
+    }).join('');
+    const tc=s.total===0?'#2E7D32':s.total<=5?'#f57f17':s.total<=15?'#e65100':'#C13832';
+    return `<tr style="background:${i%2===0?'#fff':'#f8fbfc'}"
+               onmouseenter="this.style.background='#e8f4f6'"
+               onmouseleave="this.style.background='${i%2===0?'#fff':'#f8fbfc'}'">
+      <td style="padding:9px 14px;text-align:center;border-bottom:1px solid var(--line)">${posBadge}</td>
+      <td style="padding:9px 14px;font-weight:700;color:${color};border-bottom:1px solid var(--line);font-size:.78rem">
+        ${s.planta.length>24?s.planta.substring(0,23)+'…':s.planta}</td>
+      <td style="padding:9px 14px;color:var(--muted);font-size:.72rem;border-bottom:1px solid var(--line)">
+        ${s.resp.split(' ')[0]+' '+s.resp.split(' ').slice(-1)}</td>
+      ${indCells}
+      <td style="padding:9px 14px;text-align:center;font-weight:900;font-size:.88rem;
+                 color:${tc};border-bottom:1px solid var(--line)">
+        ${s.total.toLocaleString('es-CL')}</td>
+
+    </tr>`;
+  }).join('');
+  document.getElementById('ranking-body').innerHTML=tbodyHTML;
+
+  // ── Banner de planta filtrada ──
+  updatePlantaBanner(scores);
+}
+
+function updatePlantaBanner(scores){
+  const banner  = document.getElementById('planta-rank-banner');
+  const general = document.getElementById('ranking-general');
+  const fPlanta = document.getElementById('f-planta').value;
+  const fResp   = document.getElementById('f-responsable').value;
+
+  let plantaActiva = null;
+  if(fPlanta) plantaActiva = fPlanta;
+  else if(fResp) plantaActiva = Object.keys(RESPONSABLES).find(p=>RESPONSABLES[p]===fResp)||null;
+
+  if(!plantaActiva){
+    // Sin filtro — mostrar ranking general, ocultar banner
+    general.style.display = '';
+    banner.innerHTML = '';
+    return;
+  }
+
+  // Con filtro — ocultar ranking general, mostrar banner de planta
+  general.style.display = 'none';
+
+  const s = scores.find(x=>x.planta===plantaActiva);
+  if(!s){ banner.innerHTML=''; return; }
+
+  const color = PALETTE_PLANTS[plantaActiva];
+  const est   = estadoPlanta(s.total);
+  const medal = PODIO_MEDALS[s.pos-1]||`${s.pos}°`;
+
+  const chips = RANKING_INDS.filter(ind=>s.vals[ind.key]>0)
+    .map(ind=>`<span class="rank-chip">⚠ ${ind.col}: ${s.vals[ind.key]}</span>`).join('');
+  const allGood = !chips;
+
+  banner.innerHTML=`
+    <div class="rank-banner" style="background:linear-gradient(135deg,${color},${color}cc)">
+      <div style="text-align:center;min-width:80px">
+        <div style="font-size:2.2rem;line-height:1">${medal}</div>
+        <div style="font-size:3rem;font-weight:900;color:#fff;line-height:1">${s.pos}</div>
+        <div style="font-size:.62rem;color:rgba(255,255,255,.7);text-transform:uppercase">de 5 plantas</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:2px">${plantaActiva}</div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.8);margin-bottom:8px">${s.resp} · S${SEM_DATOS_FIN}</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          ${allGood
+            ? '<span class="rank-chip" style="background:rgba(46,125,50,.5)">✅ Todos los indicadores en cero</span>'
+            : chips}
+        </div>
+      </div>
+      <div style="text-align:right;color:#fff;min-width:90px">
+        <div style="font-size:.65rem;opacity:.75;text-transform:uppercase;letter-spacing:.5px">Puntaje total</div>
+        <div style="font-size:2.2rem;font-weight:900;line-height:1.1">${s.total.toLocaleString('es-CL')}</div>
+        <div style="margin-top:4px">
+          <span style="background:rgba(255,255,255,.2);border-radius:6px;padding:3px 8px;
+                       font-size:.7rem;font-weight:700">${est.label}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+
+function updateAll(){
+  getMaxSemDatos();  // sincroniza SEM_DATOS_FIN con los datos reales antes de renderizar
+  buildSemaforoTables();
+  updateChartAvisos();
+  updateChartOT();
+  updateChartTF();
+  updateChartBL();
+  updateChartRSNOC();
+  updateChartRCOC();
+  buildRanking();
+  updateKPIs();
+}
+
+// ===== SIN RESTRICCIONES DE EDICIÓN =====
+// Todas las semanas son editables en cualquier momento
+
+// ===== MODAL =====
+function openModal(){
+  let html='';
+  for(let s=1;s<=52;s++){
+    const filled = s >= SEM_DATOS_INICIO && s <= SEM_DATOS_FIN;
+    const active = s === selectedWeekModal;
+    let cls = 'week-btn';
+    if(active)      cls += ' active';
+    else if(filled) cls += ' filled';
+    html += `<div class="${cls}" data-sem="${s}" onclick="selectWeek(${s})">S${s}</div>`;
+  }
+  document.getElementById('week-selector').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+
+function selectWeek(s){
+  selectedWeekModal = s;
+  document.querySelectorAll('#week-selector .week-btn').forEach(b=>{
+    const sem = parseInt(b.dataset.sem);
+    b.classList.toggle('active', sem === s);
+    if(sem === s) b.classList.remove('filled');
+    else if(sem >= SEM_DATOS_INICIO && sem <= SEM_DATOS_FIN) b.classList.add('filled');
+  });
+  preloadModalValue();
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+
+function deleteEntry(){
+  const sem    = selectedWeekModal;
+  const resp   = document.getElementById('m-responsable').value;
+  const planta = document.getElementById('m-planta').value;
+  const indKey = document.getElementById('m-indicador').value;
+
+  allData = allData.filter(d=>!(
+    d.semana===sem && d.responsable===resp &&
+    d.planta===planta && d.indicador===indKey
+  ));
+
+  document.getElementById('m-valor').value = '';
+  document.getElementById('m-comentario').value = '';
+
+  closeModal();
+  filteredData = [...allData];
+  applyFilters();
+  syncSave();
+}
+
+// Precarga el valor existente cuando se cambia semana/planta/indicador en el modal
+function preloadModalValue(){
+  const sem    = selectedWeekModal;
+  const resp   = document.getElementById('m-responsable').value;
+  const planta = document.getElementById('m-planta').value;
+  const indKey = document.getElementById('m-indicador').value;
+  const row    = allData.find(d=>d.semana===sem&&d.responsable===resp&&d.planta===planta&&d.indicador===indKey);
+  document.getElementById('m-valor').value      = (row && row.valor !== null && row.valor !== undefined) ? row.valor : '';
+  document.getElementById('m-comentario').value = row ? (row.comentario||'') : '';
+}
+
+function updateModalUnit(){
+  const key=document.getElementById('m-indicador').value;
+  document.getElementById('m-unidad').value=UNIT_MAP[key]||'ut.';
+}
+
+function saveEntry(){
+  const sem  = selectedWeekModal;
+  const resp = document.getElementById('m-responsable').value;
+  const planta     = document.getElementById('m-planta').value;
+  const indKey     = document.getElementById('m-indicador').value;
+  const valorRaw    = document.getElementById('m-valor').value.trim();
+  const valor       = valorRaw === '' ? null : +valorRaw;
+  const comentario = document.getElementById('m-comentario').value.trim();
+  const unidad     = UNIT_MAP[indKey]||'ut.';
+  const ind        = INDICADORES.find(i=>i.key===indKey);
+
+  allData = allData.filter(d=>!(d.semana===sem&&d.responsable===resp&&d.planta===planta&&d.indicador===indKey));
+  allData.push({semana:sem, responsable:resp, planta, indicador:indKey,
+                indicadorLabel:ind.label, unidad, frecuencia:'semanal',
+                valor, comentario, _manual:true});
+
+  document.getElementById('m-comentario').value='';
+  document.getElementById('m-valor').value='';
+
+  closeModal();
+  filteredData=[...allData];
+  applyFilters();
+
+  const weekBtns=document.querySelectorAll('.week-btn');
+  if(weekBtns[sem-1]) weekBtns[sem-1].classList.add('filled');
+
+  // Guardar en la nube automáticamente
+  syncSave();
+}
+
+// Click outside modal to close
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal()});
+
+// ===== JSONBIN SYNC =====
+const JSONBIN_KEY  = '$2a$10$0GIrwxaouXOFTgqoelujXOlRalpkRjKAGMNF4icbMq7xrQU824coW';
+const JSONBIN_API  = 'https://api.jsonbin.io/v3';
+const BIN_NAME     = 'Dashboard-Andina-2025';
+let   BIN_ID       = localStorage.getItem('andina_bin_id') || '6a0d9c2b6610dd3ae8769059';
+
+// Headers comunes — X-Master-Key habilita CORS en JSONBin
+const JB_HEADERS = {
+  'Content-Type':  'application/json',
+  'X-Master-Key':  JSONBIN_KEY,
+  'X-Bin-Private': 'false'
+};
+
+function setSyncStatus(msg, color){
+  const el = document.getElementById('sync-status');
+  if(!el) return;
+  el.innerHTML = msg;
+  el.style.background = color==='ok'?'#e8f5e9':color==='err'?'#fde8e8':'#fff8e1';
+  el.style.color      = color==='ok'?'#2e7d32':color==='err'?'#c13832':'#f57f17';
+}
+
+async function crearBin(){
+  const payload = { version:2, entries:[], updatedAt: new Date().toISOString() };
+  const res  = await fetch(`${JSONBIN_API}/b`,{
+    method:'POST',
+    headers:{...JB_HEADERS, 'X-Bin-Name':BIN_NAME},
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  return data.metadata?.id || null;
+}
+
+async function syncSave(){
+  setSyncStatus('💾 Guardando en la nube...','warn');
+  try {
+    const entries = allData.filter(d=>d._manual);
+    const payload = { version:2, entries, updatedAt: new Date().toISOString() };
+
+    if(!BIN_ID){
+      BIN_ID = await crearBin();
+      if(BIN_ID) localStorage.setItem('andina_bin_id', BIN_ID);
+    }
+    if(!BIN_ID) throw new Error('No se pudo crear el bin');
+
+    await fetch(`${JSONBIN_API}/b/${BIN_ID}`,{
+      method:'PUT',
+      headers: JB_HEADERS,
+      body: JSON.stringify(payload)
+    });
+    setSyncStatus(`✅ Guardado · ${new Date().toLocaleTimeString('es-CL')} &nbsp;|&nbsp; <strong>ID: ${BIN_ID}</strong> &nbsp;<button onclick="copyBinId()" style="border:none;background:var(--codelco);color:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.68rem">📋 Copiar ID</button>`,'ok');
+  } catch(e){
+    setSyncStatus('⚠ Error al guardar — revisa conexión a internet','err');
+    console.error(e);
+  }
+}
+
+async function syncLoad(){
+  setSyncStatus('🔄 Conectando con la nube...','warn');
+  try {
+    if(!BIN_ID){
+      BIN_ID = await crearBin();
+      if(BIN_ID){
+        localStorage.setItem('andina_bin_id', BIN_ID);
+        setSyncStatus(`✅ Bin creado · <strong>ID: ${BIN_ID}</strong> &nbsp;<button onclick="copyBinId()" style="border:none;background:var(--codelco);color:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.68rem">📋 Copiar ID para el equipo</button>`,'ok');
+      } else {
+        setSyncStatus('⚠ No se pudo conectar con JSONBin','err');
+      }
+      return;
+    }
+
+    const res  = await fetch(`${JSONBIN_API}/b/${BIN_ID}/latest`,{
+      headers: JB_HEADERS
+    });
+    const data = await res.json();
+    const entries = data?.record?.entries || [];
+
+    if(entries.length > 0){
+      entries.forEach(e=>{
+        e._manual = true;
+        allData = allData.filter(d=>!(
+          d.semana===e.semana && d.planta===e.planta &&
+          d.indicador===e.indicador && d.responsable===e.responsable
+        ));
+        allData.push(e);
+      });
+      filteredData = [...allData];
+      updateAll();
+      setSyncStatus(`✅ ${entries.length} registros cargados · ${new Date().toLocaleTimeString('es-CL')} &nbsp;|&nbsp; <strong>ID: ${BIN_ID}</strong> &nbsp;<button onclick="copyBinId()" style="border:none;background:var(--codelco);color:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.68rem">📋 Copiar ID</button>`,'ok');
+    } else {
+      setSyncStatus(`ℹ Sin datos aún · <strong>ID: ${BIN_ID}</strong> &nbsp;<button onclick="copyBinId()" style="border:none;background:var(--codelco);color:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.68rem">📋 Copiar ID para el equipo</button>`,'warn');
+    }
+  } catch(e){
+    setSyncStatus('⚠ Sin conexión — trabajando con datos locales','err');
+    console.error(e);
+  }
+}
+
+function copyBinId(){
+  if(!BIN_ID){ alert('Aún no hay ID disponible. Espera a que se conecte.'); return; }
+  // Crear un input temporal para copiar
+  const inp = document.createElement('input');
+  inp.value = BIN_ID;
+  document.body.appendChild(inp);
+  inp.select();
+  inp.setSelectionRange(0,99999);
+  document.execCommand('copy');
+  document.body.removeChild(inp);
+  alert(`✅ ID copiado al portapapeles:\n\n${BIN_ID}\n\nEnvía este ID a tus planificadores por Teams.\nEllos deben pegarlo al hacer clic en "Ingresar ID del equipo".`);
+}
+
+function setBinId(){
+  const id = prompt('Pega el BIN ID que te compartió el administrador:');
+  if(id && id.trim()){
+    BIN_ID = id.trim();
+    localStorage.setItem('andina_bin_id', BIN_ID);
+    syncLoad();
+  }
+}
+
+// ===== BOOT =====
+initFilters();
+updateAll();
+// Cargar datos de la nube al iniciar
+syncLoad();
+</script>
+</body>
+</html>
