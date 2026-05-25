@@ -1886,7 +1886,14 @@ document.getElementById('modal').addEventListener('click',function(e){if(e.targe
 const JSONBIN_KEY  = '$2a$10$0GIrwxaouXOFTgqoelujXOlRalpkRjKAGMNF4icbMq7xrQU824coW';
 const JSONBIN_API  = 'https://api.jsonbin.io/v3';
 const BIN_NAME     = 'Dashboard-Andina-2025';
-let   BIN_ID       = localStorage.getItem('andina_bin_id') || null;
+let   BIN_ID       = localStorage.getItem('andina_bin_id') || '6a0d9c2b6610dd3ae8769059';
+
+// Headers comunes — X-Master-Key habilita CORS en JSONBin
+const JB_HEADERS = {
+  'Content-Type':  'application/json',
+  'X-Master-Key':  JSONBIN_KEY,
+  'X-Bin-Private': 'false'
+};
 
 function setSyncStatus(msg, color){
   const el = document.getElementById('sync-status');
@@ -1900,10 +1907,7 @@ async function crearBin(){
   const payload = { version:2, entries:[], updatedAt: new Date().toISOString() };
   const res  = await fetch(`${JSONBIN_API}/b`,{
     method:'POST',
-    headers:{'Content-Type':'application/json',
-             'X-Master-Key':JSONBIN_KEY,
-             'X-Bin-Name':BIN_NAME,
-             'X-Bin-Private':'false'},
+    headers:{...JB_HEADERS, 'X-Bin-Name':BIN_NAME},
     body: JSON.stringify(payload)
   });
   const data = await res.json();
@@ -1924,7 +1928,7 @@ async function syncSave(){
 
     await fetch(`${JSONBIN_API}/b/${BIN_ID}`,{
       method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
+      headers: JB_HEADERS,
       body: JSON.stringify(payload)
     });
     setSyncStatus(`✅ Guardado · ${new Date().toLocaleTimeString('es-CL')} &nbsp;|&nbsp; <strong>ID: ${BIN_ID}</strong> &nbsp;<button onclick="copyBinId()" style="border:none;background:var(--codelco);color:#fff;border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.68rem">📋 Copiar ID</button>`,'ok');
@@ -1937,7 +1941,6 @@ async function syncSave(){
 async function syncLoad(){
   setSyncStatus('🔄 Conectando con la nube...','warn');
   try {
-    // Si no hay BIN_ID, crear uno nuevo
     if(!BIN_ID){
       BIN_ID = await crearBin();
       if(BIN_ID){
@@ -1949,9 +1952,8 @@ async function syncLoad(){
       return;
     }
 
-    // Cargar datos existentes
     const res  = await fetch(`${JSONBIN_API}/b/${BIN_ID}/latest`,{
-      headers:{'X-Master-Key':JSONBIN_KEY}
+      headers: JB_HEADERS
     });
     const data = await res.json();
     const entries = data?.record?.entries || [];
