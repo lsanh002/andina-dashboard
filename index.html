@@ -1886,7 +1886,8 @@ document.getElementById('modal').addEventListener('click',function(e){if(e.targe
 // Usa Google Sheets como base de datos compartida (sin problemas de CORS)
 const SHEET_ID   = '1cZx4bNaCBZgrCasn2tLMzSqO7kRpojCAyq3LIe71WPU';
 const SHEET_NAME = 'Hoja1';
-const APPS_URL   = `https://script.google.com/macros/s/DEPLOY_ID/exec`;
+const APPS_URL   = 'https://script.google.com/macros/s/AKfycbxZIdDkpgZJWh22uqa8urDwrL-lF5NGWNup5LpZQ3BoMAgFZjSWpB2Vqn54cZTjSX5r/exec';
+let   appsScriptUrl = APPS_URL;
 
 // URL pública para leer la hoja (no requiere autenticación)
 const READ_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${SHEET_NAME}`;
@@ -1899,25 +1900,16 @@ function setSyncStatus(msg, color){
   el.style.color      = color==='ok'?'#2e7d32':color==='err'?'#c13832':'#f57f17';
 }
 
-// Serializar allData manual a JSON y guardarlo en celda A2 via Apps Script
+// Serializar allData manual a JSON y guardarlo via Apps Script
 async function syncSave(){
-  setSyncStatus('💾 Guardando...','warn');
+  setSyncStatus('💾 Guardando en la nube...','warn');
   try {
-    const entries  = allData.filter(d=>d._manual);
-    const payload  = JSON.stringify({version:2, entries, updatedAt: new Date().toISOString()});
-    // Usar Apps Script Web App para escribir
-    const url = localStorage.getItem('apps_script_url');
-    if(!url){
-      // Sin Apps Script — guardar en localStorage como respaldo
-      localStorage.setItem('andina_data', payload);
-      setSyncStatus('⚠ Guardado localmente (configura Apps Script para compartir)','warn');
-      return;
-    }
-    await fetch(url, {method:'POST', body: payload, mode:'no-cors'});
+    const entries = allData.filter(d=>d._manual);
+    const payload = JSON.stringify({version:2, entries, updatedAt: new Date().toISOString()});
     localStorage.setItem('andina_data', payload);
-    setSyncStatus(`✅ Guardado · ${new Date().toLocaleTimeString('es-CL')}`,'ok');
+    await fetch(APPS_URL, {method:'POST', body:payload, mode:'no-cors'});
+    setSyncStatus(`✅ Guardado en la nube · ${new Date().toLocaleTimeString('es-CL')}`,'ok');
   } catch(e){
-    // Guardar localmente como respaldo
     const entries = allData.filter(d=>d._manual);
     localStorage.setItem('andina_data', JSON.stringify({version:2, entries}));
     setSyncStatus('✅ Guardado localmente','ok');
@@ -1925,37 +1917,33 @@ async function syncSave(){
   }
 }
 
-// Cargar datos desde localStorage (respaldo local)
+// Cargar datos desde Apps Script / localStorage
 async function syncLoad(){
-  setSyncStatus('🔄 Cargando datos...','warn');
-  try{
-    // Intentar cargar desde Apps Script si está configurado
-    const appsUrl = localStorage.getItem('apps_script_url');
-    if(appsUrl){
-      try{
-        const res  = await fetch(appsUrl + '?action=read', {mode:'cors'});
-        const data = await res.json();
+  setSyncStatus('🔄 Cargando datos de la nube...','warn');
+  try {
+    const res  = await fetch(APPS_URL);
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if(data?.entries?.length > 0){
+      procesarEntradas(data.entries);
+      setSyncStatus(`✅ ${data.entries.length} registros cargados · ${new Date().toLocaleTimeString('es-CL')}`,'ok');
+      return;
+    }
+    setSyncStatus('ℹ Sin datos en la nube aún — carga tu primera semana','warn');
+  } catch(e){
+    // Respaldo local
+    try {
+      const local = localStorage.getItem('andina_data');
+      if(local){
+        const data = JSON.parse(local);
         if(data?.entries?.length > 0){
           procesarEntradas(data.entries);
-          setSyncStatus(`✅ ${data.entries.length} registros cargados de la nube · ${new Date().toLocaleTimeString('es-CL')}`,'ok');
+          setSyncStatus(`✅ ${data.entries.length} registros cargados (local) · ${new Date().toLocaleTimeString('es-CL')}`,'ok');
           return;
         }
-      } catch(e){ console.log('Apps Script no disponible, usando local'); }
-    }
-
-    // Cargar desde localStorage
-    const local = localStorage.getItem('andina_data');
-    if(local){
-      const data = JSON.parse(local);
-      if(data?.entries?.length > 0){
-        procesarEntradas(data.entries);
-        setSyncStatus(`✅ ${data.entries.length} registros cargados · ${new Date().toLocaleTimeString('es-CL')}`,'ok');
-        return;
       }
-    }
-    setSyncStatus('ℹ Sin datos guardados aún — carga tu primera semana','warn');
-  } catch(e){
-    setSyncStatus('⚠ Error al cargar datos','err');
+    } catch(e2){}
+    setSyncStatus('⚠ Sin conexión — trabajando con datos locales','err');
     console.error(e);
   }
 }
